@@ -1,0 +1,66 @@
+// Prisma schema for the Universal Billing System
+// Multi-tenant base pattern: every business-data table carries a tenantId
+// and must be scoped through src/lib/tenant-db.ts — never queried directly
+// with a client-supplied id.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BusinessType {
+  COMMON
+  AGRO
+  TYRE
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  CASHIER
+  ACCOUNTANT
+}
+
+model Tenant {
+  id           String       @id @default(cuid())
+  name         String
+  businessType BusinessType @default(COMMON)
+
+  // Shop profile (Settings phase will expand this)
+  gstNumber String?
+  phone     String?
+  email     String?
+  address   String?
+  logoUrl   String?
+
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tenants")
+}
+
+model User {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name         String
+  email        String @unique
+  passwordHash String
+  role         Role   @default(OWNER)
+
+  isActive Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("users")
+}
