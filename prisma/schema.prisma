@@ -65,6 +65,14 @@ enum PaymentMode {
   CREDIT
 }
 
+enum AdjustmentReason {
+  DAMAGE
+  LOSS
+  CORRECTION
+  OPENING_STOCK
+  OTHER
+}
+
 model Tenant {
   id           String       @id @default(cuid())
   name         String
@@ -78,12 +86,13 @@ model Tenant {
   state     String?
   logoUrl   String?
 
-  users    User[]
-  products Product[]
-  parties  Party[]
-  invoices Invoice[]
-  payments Payment[]
-  counters Counter[]
+  users            User[]
+  products         Product[]
+  parties          Party[]
+  invoices         Invoice[]
+  payments         Payment[]
+  counters         Counter[]
+  stockAdjustments StockAdjustment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -128,14 +137,38 @@ model Product {
   category String?
   isActive Boolean @default(true)
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoiceItems InvoiceItem[]
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceItems     InvoiceItem[]
+  stockAdjustments StockAdjustment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
   @@map("products")
+}
+
+model StockAdjustment {
+  id       String @id @default(cuid())
+  tenantId String
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  // Positive = stock added, negative = stock removed.
+  quantityChange Decimal          @db.Decimal(12, 3)
+  reason         AdjustmentReason
+  notes          String?
+
+  createdByUserId String
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@map("stock_adjustments")
 }
 
 model Party {

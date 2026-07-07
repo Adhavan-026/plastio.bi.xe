@@ -3,7 +3,16 @@ import { getTenantContext, getTenantDb } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { PrintButton } from "./print-button";
+import { RecordPaymentForm } from "./record-payment-form";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,7 +23,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } }),
     db.invoice.findUnique({
       where: { id },
-      include: { party: true, items: true },
+      include: { party: true, items: true, payments: { orderBy: { paymentDate: "asc" } } },
     }),
   ]);
 
@@ -22,6 +31,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   const balanceDue = Number(invoice.totalAmount) - Number(invoice.amountPaid);
   const isInterState = Number(invoice.igstAmount) > 0;
+  const isPurchase = invoice.type === "PURCHASE";
+  const docTitle = isPurchase ? "PURCHASE BILL" : "TAX INVOICE";
+  const partyLabel = isPurchase ? "Bill from" : "Bill to";
 
   return (
     <div className="flex flex-col gap-4">
@@ -40,7 +52,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             {tenant.gstNumber && <p className="text-sm">GSTIN: {tenant.gstNumber}</p>}
           </div>
           <div className="text-right">
-            <h2 className="text-lg font-semibold">TAX INVOICE</h2>
+            <h2 className="text-lg font-semibold">{docTitle}</h2>
             <p className="text-sm">
               <span className="text-muted-foreground">No: </span>
               {invoice.invoiceNumber}
@@ -56,7 +68,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-muted-foreground text-xs uppercase">Bill to</p>
+            <p className="text-muted-foreground text-xs uppercase">{partyLabel}</p>
             <p className="font-medium">{invoice.party.name}</p>
             {invoice.party.address && <p className="text-sm">{invoice.party.address}</p>}
             <p className="text-sm">
@@ -171,6 +183,43 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <p>{invoice.notes}</p>
           </div>
         )}
+      </div>
+
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 print:hidden">
+        <Separator />
+
+        <div>
+          <h3 className="mb-2 font-medium">Payments</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Mode</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {invoice.payments.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-muted-foreground text-center">
+                    No payments recorded yet.
+                  </TableCell>
+                </TableRow>
+              )}
+              {invoice.payments.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell>{payment.paymentDate.toLocaleDateString("en-IN")}</TableCell>
+                  <TableCell>{payment.mode}</TableCell>
+                  <TableCell>{payment.reference ?? "—"}</TableCell>
+                  <TableCell className="text-right">₹{Number(payment.amount).toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {balanceDue > 0 && <RecordPaymentForm invoiceId={invoice.id} balanceDue={balanceDue} />}
       </div>
     </div>
   );

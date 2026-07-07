@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
+import { isLowStock } from "@/lib/billing/low-stock";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -46,7 +47,7 @@ export default async function ProductsPage() {
             </TableRow>
           )}
           {products.map((product) => {
-            const isLowStock = Number(product.stockQty) <= Number(product.lowStockAlert);
+            const lowStock = isLowStock(product.stockQty, product.lowStockAlert);
             return (
               <TableRow key={product.id}>
                 <TableCell className="font-medium">{product.name}</TableCell>
@@ -55,7 +56,7 @@ export default async function ProductsPage() {
                 <TableCell className="text-right">{Number(product.gstRate)}%</TableCell>
                 <TableCell className="text-right">₹{Number(product.sellingPrice).toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                  <span className={isLowStock ? "text-destructive font-medium" : ""}>
+                  <span className={lowStock ? "text-destructive font-medium" : ""}>
                     {Number(product.stockQty)} {product.unit}
                   </span>
                 </TableCell>
@@ -64,7 +65,7 @@ export default async function ProductsPage() {
                     {product.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="flex gap-1">
                   <Button
                     render={<Link href={`/dashboard/products/${product.id}/edit`} />}
                     nativeButton={false}
@@ -72,6 +73,14 @@ export default async function ProductsPage() {
                     size="sm"
                   >
                     Edit
+                  </Button>
+                  <Button
+                    render={<Link href={`/dashboard/products/${product.id}/adjust-stock`} />}
+                    nativeButton={false}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    Adjust stock
                   </Button>
                 </TableCell>
               </TableRow>

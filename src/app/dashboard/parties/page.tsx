@@ -56,7 +56,11 @@ export default async function PartiesPage() {
             const balance = Number(party.openingBalance) + (dueBalances.get(party.id) ?? 0);
             return (
               <TableRow key={party.id}>
-                <TableCell className="font-medium">{party.name}</TableCell>
+                <TableCell className="font-medium">
+                  <Link href={`/dashboard/parties/${party.id}`} className="underline underline-offset-4">
+                    {party.name}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{party.type}</Badge>
                 </TableCell>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { createSalesInvoice } from "@/app/actions/invoices";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { UNITS } from "@/lib/validations/product";
 import { PAYMENT_MODES } from "@/lib/validations/invoice";
+import type { SalesInvoiceFormState } from "@/lib/validations/invoice";
 
 type ProductOption = {
   id: string;
@@ -30,6 +30,7 @@ type ProductOption = {
   unit: string;
   gstRate: string;
   sellingPrice: string;
+  purchasePrice: string;
 };
 
 type PartyOption = {
@@ -71,14 +72,22 @@ function lineTotal(row: Row): number {
   return afterDiscount + (afterDiscount * gstRate) / 100;
 }
 
-export function SalesInvoiceForm({
+export function InvoiceForm({
+  action,
   products,
   parties,
+  partyLabel,
+  rateField,
+  submitLabel,
 }: {
+  action: (state: SalesInvoiceFormState, formData: FormData) => Promise<SalesInvoiceFormState>;
   products: ProductOption[];
   parties: PartyOption[];
+  partyLabel: string;
+  rateField: "sellingPrice" | "purchasePrice";
+  submitLabel: string;
 }) {
-  const [state, formAction, pending] = useActionState(createSalesInvoice, undefined);
+  const [state, formAction, pending] = useActionState(action, undefined);
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [billDiscountPercent, setBillDiscountPercent] = useState("0");
 
@@ -96,6 +105,11 @@ export function SalesInvoiceForm({
     [products]
   );
 
+  const partyItems = useMemo(
+    () => Object.fromEntries(parties.map((party) => [party.id, party.name])),
+    [parties]
+  );
+
   function updateRow(key: string, patch: Partial<Row>) {
     setRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
   }
@@ -111,7 +125,7 @@ export function SalesInvoiceForm({
       productId: product.id,
       description: product.name,
       unit: product.unit,
-      rate: product.sellingPrice,
+      rate: rateField === "sellingPrice" ? product.sellingPrice : product.purchasePrice,
       gstRate: product.gstRate,
     });
   }
@@ -134,13 +148,10 @@ export function SalesInvoiceForm({
 
       <div className="grid grid-cols-3 gap-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="partyId">Customer</Label>
-          <Select
-            name="partyId"
-            items={Object.fromEntries(parties.map((party) => [party.id, party.name]))}
-          >
+          <Label htmlFor="partyId">{partyLabel}</Label>
+          <Select name="partyId" items={partyItems}>
             <SelectTrigger id="partyId" className="w-full">
-              <SelectValue placeholder="Select customer" />
+              <SelectValue placeholder={`Select ${partyLabel.toLowerCase()}`} />
             </SelectTrigger>
             <SelectContent>
               {parties.map((party) => (
@@ -339,7 +350,7 @@ export function SalesInvoiceForm({
       {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
 
       <Button type="submit" disabled={pending} className="self-start">
-        {pending ? "Saving invoice..." : "Create invoice"}
+        {pending ? "Saving invoice..." : submitLabel}
       </Button>
     </form>
   );

@@ -12,13 +12,40 @@ import {
   SalesInvoiceFormSchema,
   type SalesInvoiceFormState,
 } from "@/lib/validations/invoice";
+import type { Role, PartyType } from "@/generated/prisma/enums";
 
-export async function createSalesInvoice(
-  _state: SalesInvoiceFormState,
+type InvoiceKind = "SALES" | "PURCHASE";
+
+const KIND_CONFIG: Record<
+  InvoiceKind,
+  {
+    allowedRoles: Role[];
+    validPartyTypes: PartyType[];
+    stockDirection: "increment" | "decrement";
+    partyErrorMessage: string;
+  }
+> = {
+  SALES: {
+    allowedRoles: ["OWNER", "MANAGER", "CASHIER"],
+    validPartyTypes: ["CUSTOMER", "BOTH"],
+    stockDirection: "decrement",
+    partyErrorMessage: "Select a valid customer.",
+  },
+  PURCHASE: {
+    allowedRoles: ["OWNER", "MANAGER"],
+    validPartyTypes: ["SUPPLIER", "BOTH"],
+    stockDirection: "increment",
+    partyErrorMessage: "Select a valid supplier.",
+  },
+};
+
+async function createInvoiceCore(
+  kind: InvoiceKind,
   formData: FormData
 ): Promise<SalesInvoiceFormState> {
+  const config = KIND_CONFIG[kind];
   const context = await getTenantContext();
-  requireRole(context, ["OWNER", "MANAGER", "CASHIER"]);
+  requireRole(context, config.allowedRoles);
 
   const validatedFields = SalesInvoiceFormSchema.safeParse(Object.fromEntries(formData));
   if (!validatedFields.success) {
@@ -35,7 +62,10 @@ export async function createSalesInvoice(
     return { errors: { itemsJson: ["Invalid item data."] } };
   }
 
-  const itemsResult = z.array(InvoiceLineSchema).min(1, { error: "Add at least one item." }).safeParse(rawItems);
+  const itemsResult = z
+    .array(InvoiceLineSchema)
+    .min(1, { error: "Add at least one item." })
+    .safeParse(rawItems);
   if (!itemsResult.success) {
     return { errors: { itemsJson: ["One or more items are invalid."] } };
   }
@@ -48,8 +78,8 @@ export async function createSalesInvoice(
     db.party.findUnique({ where: { id: partyId } }),
   ]);
 
-  if (!party) {
-    return { errors: { partyId: ["Select a valid customer."] } };
+  if (!party || !config.validPartyTypes.includes(party.type)) {
+    return { errors: { partyId: [config.partyErrorMessage] } };
   }
 
   const productIds = items.map((item) => item.productId).filter((id): id is string => !!id);
@@ -77,12 +107,12 @@ export async function createSalesInvoice(
   const paymentStatus = amountPaid <= 0 ? "UNPAID" : amountPaid >= totals.totalAmount ? "PAID" : "PARTIAL";
 
   const invoice = await db.$transaction(async (tx) => {
-    const invoiceNumber = await getNextInvoiceNumber(tx, context.tenantId, "SALES", invoiceDateObj);
+    const invoiceNumber = await getNextInvoiceNumber(tx, context.tenantId, kind, invoiceDateObj);
 
     const created = await tx.invoice.create({
       data: {
         tenantId: context.tenantId,
-        type: "SALES",
+        type: kind,
         invoiceNumber,
         invoiceDate: invoiceDateObj,
         partyId,
@@ -136,7 +166,7 @@ export async function createSalesInvoice(
       if (item.productId) {
         await tx.product.update({
           where: { id: item.productId },
-          data: { stockQty: { decrement: item.quantity } },
+          data: { stockQty: { [config.stockDirection]: item.quantity } },
         });
       }
     }
@@ -145,5 +175,20 @@ export async function createSalesInvoice(
   });
 
   revalidatePath("/dashboard/invoices");
+  revalidatePath("/dashboard/purchases");
   redirect(`/dashboard/invoices/${invoice.id}`);
+}
+
+export async function createSalesInvoice(
+  _state: SalesInvoiceFormState,
+  formData: FormData
+): Promise<SalesInvoiceFormState> {
+  return createInvoiceCore("SALES", formData);
+}
+
+export async function createPurchaseInvoice(
+  _state: SalesInvoiceFormState,
+  formData: FormData
+): Promise<SalesInvoiceFormState> {
+  return createInvoiceCore("PURCHASE", formData);
 }
