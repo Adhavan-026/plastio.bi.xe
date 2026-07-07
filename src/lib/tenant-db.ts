@@ -7,7 +7,15 @@ import type { Role } from "@/generated/prisma/enums";
 // Prisma models that carry a tenantId column. Every model added to the
 // schema that belongs to a shop (Product, Party, Invoice, ...) MUST be
 // added here — this list is what makes getTenantDb() safe to trust.
-const TENANT_SCOPED_MODELS = new Set(["User"]);
+const TENANT_SCOPED_MODELS = new Set([
+  "User",
+  "Product",
+  "Party",
+  "Invoice",
+  "InvoiceItem",
+  "Payment",
+  "Counter",
+]);
 
 export type TenantContext = {
   userId: string;
@@ -41,6 +49,14 @@ export function requireRole(context: TenantContext, allowed: Role[]) {
  * model listed in TENANT_SCOPED_MODELS automatically gets `tenantId`
  * merged into its `where` (reads/updates/deletes) or `data` (creates), so
  * call sites can never accidentally read or write another shop's rows.
+ *
+ * Limitations:
+ * - Only the TOP-LEVEL operation's args are rewritten. Nested writes (e.g.
+ *   `db.invoice.create({ data: { items: { create: [...] } } })`) are NOT
+ *   walked, so nested rows must have `tenantId` set explicitly.
+ * - `upsert` is NOT scoped (compound unique `where` shapes vary per model
+ *   and can't be safely rewritten generically). Callers using `upsert`
+ *   (e.g. the invoice counter) must pass `tenantId` explicitly themselves.
  */
 export async function getTenantDb() {
   const { tenantId } = await getTenantContext();

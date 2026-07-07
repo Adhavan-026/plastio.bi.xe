@@ -1,44 +1,37 @@
-import { getTenantContext, getTenantDb } from "@/lib/tenant-db";
-import { prisma } from "@/lib/prisma";
-import { logout } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { getTenantDb } from "@/lib/tenant-db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function DashboardPage() {
-  const { tenantId, role } = await getTenantContext();
-  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
-
   const db = await getTenantDb();
-  const teamSize = await db.user.count();
+
+  const [productCount, partyCount, invoiceCount, unpaidInvoices] = await Promise.all([
+    db.product.count({ where: { isActive: true } }),
+    db.party.count({ where: { isActive: true } }),
+    db.invoice.count({ where: { type: "SALES" } }),
+    db.invoice.count({ where: { type: "SALES", paymentStatus: { in: ["UNPAID", "PARTIAL"] } } }),
+  ]);
+
+  const cards = [
+    { href: "/dashboard/products", title: "Products", value: productCount },
+    { href: "/dashboard/parties", title: "Parties", value: partyCount },
+    { href: "/dashboard/invoices", title: "Sales invoices", value: invoiceCount },
+    { href: "/dashboard/invoices?status=due", title: "Invoices with dues", value: unpaidInvoices },
+  ];
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{tenant.name}</h1>
-          <p className="text-muted-foreground text-sm">
-            {tenant.businessType} shop &middot; signed in as {role}
-          </p>
-        </div>
-        <form action={logout}>
-          <Button variant="outline" type="submit">
-            Log out
-          </Button>
-        </form>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Phase 0 foundation is live</CardTitle>
-          <CardDescription>
-            Auth, multi-tenant scoping, and the database are wired up. Billing
-            features land in Phase 1.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm">
-          <p>Team members in your shop: {teamSize}</p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {cards.map((card) => (
+        <Link key={card.href} href={card.href}>
+          <Card className="transition-colors hover:bg-muted/50">
+            <CardHeader>
+              <CardDescription>{card.title}</CardDescription>
+              <CardTitle className="text-2xl">{card.value}</CardTitle>
+            </CardHeader>
+            <CardContent />
+          </Card>
+        </Link>
+      ))}
     </div>
   );
 }
