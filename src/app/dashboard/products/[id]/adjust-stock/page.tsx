@@ -58,7 +58,7 @@ export default async function AdjustStockPage({ params }: { params: Promise<{ id
               return (
                 <TableRow key={adj.id}>
                   <TableCell>{adj.createdAt.toLocaleString("en-IN")}</TableCell>
-                  <TableCell className={`text-right ${change < 0 ? "text-destructive" : "text-green-600"}`}>
+                  <TableCell className={`text-right ${change < 0 ? "text-destructive" : "text-success"}`}>
                     {change > 0 ? "+" : ""}
                     {change}
                   </TableCell>

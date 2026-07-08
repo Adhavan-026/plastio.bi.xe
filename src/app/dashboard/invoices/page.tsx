@@ -11,9 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  PAID: "default",
-  PARTIAL: "secondary",
+const STATUS_VARIANT: Record<string, "success" | "warning" | "destructive"> = {
+  PAID: "success",
+  PARTIAL: "warning",
   UNPAID: "destructive",
 };
 

@@ -84,7 +84,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             </p>
             {invoice.party.gstNumber && <p className="text-sm">GSTIN: {invoice.party.gstNumber}</p>}
           </div>
-          <Badge variant={invoice.paymentStatus === "PAID" ? "default" : invoice.paymentStatus === "PARTIAL" ? "secondary" : "destructive"}>
+          <Badge variant={invoice.paymentStatus === "PAID" ? "success" : invoice.paymentStatus === "PARTIAL" ? "warning" : "destructive"}>
             {invoice.paymentStatus}
           </Badge>
         </div>

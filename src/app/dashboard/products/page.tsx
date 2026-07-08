@@ -67,7 +67,7 @@ export default async function ProductsPage() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={product.isActive ? "default" : "secondary"}>
+                  <Badge variant={product.isActive ? "success" : "secondary"}>
                     {product.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>

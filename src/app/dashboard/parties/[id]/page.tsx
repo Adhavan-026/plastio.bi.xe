@@ -53,7 +53,7 @@ export default async function PartyStatementPage({ params }: { params: Promise<{
 
       <div className="flex items-center gap-3">
         <span className="text-muted-foreground text-sm">Current balance:</span>
-        <Badge variant={closingBalance > 0 ? "destructive" : closingBalance < 0 ? "default" : "secondary"}>
+        <Badge variant={closingBalance > 0 ? "destructive" : closingBalance < 0 ? "success" : "secondary"}>
           ₹{Math.abs(closingBalance).toFixed(2)} {closingBalance > 0 ? "due" : closingBalance < 0 ? "advance" : "settled"}
         </Badge>
       </div>

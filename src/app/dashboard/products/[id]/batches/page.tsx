@@ -19,6 +19,13 @@ const STATUS_LABEL: Record<string, string> = {
   none: "—",
 };
 
+const STATUS_BADGE_VARIANT: Record<string, "destructive" | "warning" | "success" | "secondary"> = {
+  expired: "destructive",
+  expiring_soon: "warning",
+  ok: "success",
+  none: "secondary",
+};
+
 export default async function ProductBatchesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = await getTenantDb();
@@ -73,17 +80,7 @@ export default async function ProductBatchesPage({ params }: { params: Promise<{
                     {Number(batch.quantity)} {product.unit}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        status === "expired"
-                          ? "destructive"
-                          : status === "expiring_soon"
-                            ? "secondary"
-                            : "default"
-                      }
-                    >
-                      {STATUS_LABEL[status]}
-                    </Badge>
+                    <Badge variant={STATUS_BADGE_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>
                   </TableCell>
                 </TableRow>
               );

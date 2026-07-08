@@ -75,7 +75,7 @@ export default async function ExpiryAlertsPage() {
                   {Number(batch.quantity)} {batch.product.unit}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={status === "expired" ? "destructive" : "secondary"}>
+                  <Badge variant={status === "expired" ? "destructive" : "warning"}>
                     {STATUS_LABEL[status]}
                   </Badge>
                 </TableCell>

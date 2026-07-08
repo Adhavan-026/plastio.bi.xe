@@ -90,7 +90,7 @@ export default async function WarrantyLookupPage({
                   <TableCell>{expiry ? expiry.toLocaleDateString("en-IN") : "—"}</TableCell>
                   <TableCell>
                     {item.warrantyMonths ? (
-                      <Badge variant={valid ? "default" : "destructive"}>
+                      <Badge variant={valid ? "success" : "destructive"}>
                         {valid ? "Under warranty" : "Expired"}
                       </Badge>
                     ) : (

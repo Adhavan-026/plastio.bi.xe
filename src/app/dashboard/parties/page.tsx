@@ -72,7 +72,7 @@ export default async function PartiesPage() {
                       balance > 0
                         ? "text-destructive font-medium"
                         : balance < 0
-                          ? "font-medium text-green-600"
+                          ? "font-medium text-success"
                           : ""
                     }
                   >

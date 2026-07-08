@@ -3,6 +3,7 @@ import { getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const BASE_NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -48,11 +49,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
               ))}
             </nav>
           </div>
-          <form action={logout}>
-            <Button variant="outline" size="sm" type="submit">
-              Log out
-            </Button>
-          </form>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <form action={logout}>
+              <Button variant="outline" size="sm" type="submit">
+                Log out
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 p-6 print:max-w-none print:p-0">{children}</main>
