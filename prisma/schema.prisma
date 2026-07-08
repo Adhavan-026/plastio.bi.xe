@@ -79,12 +79,13 @@ model Tenant {
   businessType BusinessType @default(COMMON)
 
   // Shop profile (Settings phase will expand this)
-  gstNumber String?
-  phone     String?
-  email     String?
-  address   String?
-  state     String?
-  logoUrl   String?
+  gstNumber     String?
+  phone         String?
+  email         String?
+  address       String?
+  state         String?
+  logoUrl       String?
+  licenseNumber String? // Agro: pesticide/fertilizer dealer license, printed on invoices
 
   users            User[]
   products         Product[]
@@ -93,6 +94,7 @@ model Tenant {
   payments         Payment[]
   counters         Counter[]
   stockAdjustments StockAdjustment[]
+  stockBatches     StockBatch[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -137,15 +139,49 @@ model Product {
   category String?
   isActive Boolean @default(true)
 
+  // Tyre module — only meaningful/shown when the tenant's businessType is TYRE.
+  tyreBrand     String?
+  tyreSize      String?
+  tyrePattern   String?
+  tyreLoadIndex String?
+
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoiceItems     InvoiceItem[]
   stockAdjustments StockAdjustment[]
+  stockBatches     StockBatch[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
   @@map("products")
+}
+
+// Agro module — a batch/lot of stock with its own expiry, so selling can
+// go oldest-expiry-first and shops get warned before stock goes bad.
+model StockBatch {
+  id       String @id @default(cuid())
+  tenantId String
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  batchNumber String
+  mfgDate     DateTime?
+  expiryDate  DateTime?
+
+  quantity      Decimal @db.Decimal(12, 3) // remaining quantity in this batch
+  purchasePrice Decimal @default(0) @db.Decimal(12, 2)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceItems InvoiceItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@map("stock_batches")
 }
 
 model StockAdjustment {
@@ -238,6 +274,11 @@ model Invoice {
   amountPaid    Decimal       @default(0) @db.Decimal(12, 2)
   paymentStatus PaymentStatus @default(UNPAID)
 
+  // Tyre module — only meaningful/shown when the tenant's businessType is TYRE.
+  vehicleNumber String?
+  vehicleType   String?
+  exchangeValue Decimal @default(0) @db.Decimal(12, 2) // old tyre buy-back, deducted from total
+
   notes String?
 
   convertedFromId String?
@@ -269,6 +310,14 @@ model InvoiceItem {
   description String
   hsnCode     String?
 
+  // Agro module — set when this line was sold out of a specific expiry batch.
+  batchId String?
+  batch   StockBatch? @relation(fields: [batchId], references: [id])
+
+  // Tyre module — only meaningful/shown when the tenant's businessType is TYRE.
+  tyreSerialNumber String?
+  warrantyMonths   Int?
+
   quantity Decimal @db.Decimal(12, 3)
   unit     Unit    @default(PCS)
   rate     Decimal @db.Decimal(12, 2)
@@ -288,6 +337,7 @@ model InvoiceItem {
 
   @@index([tenantId])
   @@index([invoiceId])
+  @@index([tenantId, tyreSerialNumber])
   @@map("invoice_items")
 }
 

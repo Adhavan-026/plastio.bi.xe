@@ -7,6 +7,7 @@ export const TenantSettingsSchema = z.object({
   email: z.email({ error: "Enter a valid email." }).trim().optional().or(z.literal("")),
   address: z.string().trim().optional().or(z.literal("")),
   state: z.string().trim().optional().or(z.literal("")),
+  licenseNumber: z.string().trim().optional().or(z.literal("")),
 });
 
 export type TenantSettingsState =

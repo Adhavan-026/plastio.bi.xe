@@ -18,12 +18,17 @@ export async function createProduct(
   }
 
   const db = await getTenantDb();
-  const { hsnCode, category, ...rest } = validatedFields.data;
+  const { hsnCode, category, tyreBrand, tyreSize, tyrePattern, tyreLoadIndex, ...rest } =
+    validatedFields.data;
   await db.product.create({
     data: {
       ...rest,
       hsnCode: hsnCode || null,
       category: category || null,
+      tyreBrand: tyreBrand || null,
+      tyreSize: tyreSize || null,
+      tyrePattern: tyrePattern || null,
+      tyreLoadIndex: tyreLoadIndex || null,
       tenantId: context.tenantId,
     },
   });
@@ -46,7 +51,8 @@ export async function updateProduct(
   }
 
   const db = await getTenantDb();
-  const { hsnCode, category, ...rest } = validatedFields.data;
+  const { hsnCode, category, tyreBrand, tyreSize, tyrePattern, tyreLoadIndex, ...rest } =
+    validatedFields.data;
 
   const existing = await db.product.findUnique({ where: { id: productId } });
   if (!existing) {
@@ -59,6 +65,10 @@ export async function updateProduct(
       ...rest,
       hsnCode: hsnCode || null,
       category: category || null,
+      tyreBrand: tyreBrand || null,
+      tyreSize: tyreSize || null,
+      tyrePattern: tyrePattern || null,
+      tyreLoadIndex: tyreLoadIndex || null,
     },
   });
 

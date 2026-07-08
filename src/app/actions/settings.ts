@@ -17,7 +17,7 @@ export async function updateTenantSettings(
     return { errors: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { name, gstNumber, phone, email, address, state } = validatedFields.data;
+  const { name, gstNumber, phone, email, address, state, licenseNumber } = validatedFields.data;
 
   // Tenant is identified by its own id (== context.tenantId), not a
   // tenantId foreign key, so it's updated via the raw client rather than
@@ -32,6 +32,7 @@ export async function updateTenantSettings(
       email: email || null,
       address: address || null,
       state: state || null,
+      licenseNumber: licenseNumber || null,
     },
   });
 

@@ -1,12 +1,17 @@
 import { notFound } from "next/navigation";
-import { getTenantDb } from "@/lib/tenant-db";
+import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
+import { prisma } from "@/lib/prisma";
 import { updateProduct } from "@/app/actions/products";
 import { ProductForm } from "../../product-form";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
-  const product = await db.product.findUnique({ where: { id } });
+  const [product, tenant] = await Promise.all([
+    db.product.findUnique({ where: { id } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
+  ]);
 
   if (!product) notFound();
 
@@ -25,8 +30,13 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           sellingPrice: product.sellingPrice.toString(),
           stockQty: product.stockQty.toString(),
           lowStockAlert: product.lowStockAlert.toString(),
+          tyreBrand: product.tyreBrand,
+          tyreSize: product.tyreSize,
+          tyrePattern: product.tyrePattern,
+          tyreLoadIndex: product.tyreLoadIndex,
         }}
         submitLabel="Save changes"
+        showTyreFields={tenant.businessType === "TYRE"}
       />
     </div>
   );

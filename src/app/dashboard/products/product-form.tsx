@@ -26,11 +26,16 @@ type ProductFormProps = {
     sellingPrice: string;
     stockQty: string;
     lowStockAlert: string;
+    tyreBrand: string | null;
+    tyreSize: string | null;
+    tyrePattern: string | null;
+    tyreLoadIndex: string | null;
   };
   submitLabel: string;
+  showTyreFields?: boolean;
 };
 
-export function ProductForm({ action, defaultValues, submitLabel }: ProductFormProps) {
+export function ProductForm({ action, defaultValues, submitLabel, showTyreFields }: ProductFormProps) {
   const [state, formAction, pending] = useActionState(action, undefined);
 
   return (
@@ -134,6 +139,40 @@ export function ProductForm({ action, defaultValues, submitLabel }: ProductFormP
           />
         </div>
       </div>
+
+      {showTyreFields && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="tyreBrand">Tyre brand</Label>
+            <Input id="tyreBrand" name="tyreBrand" defaultValue={defaultValues?.tyreBrand ?? ""} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="tyreSize">Tyre size</Label>
+            <Input
+              id="tyreSize"
+              name="tyreSize"
+              placeholder="e.g. 145/80 R12"
+              defaultValue={defaultValues?.tyreSize ?? ""}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="tyrePattern">Tread pattern</Label>
+            <Input
+              id="tyrePattern"
+              name="tyrePattern"
+              defaultValue={defaultValues?.tyrePattern ?? ""}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="tyreLoadIndex">Load index</Label>
+            <Input
+              id="tyreLoadIndex"
+              name="tyreLoadIndex"
+              defaultValue={defaultValues?.tyreLoadIndex ?? ""}
+            />
+          </div>
+        </div>
+      )}
 
       {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
 

@@ -16,6 +16,7 @@ const TENANT_SCOPED_MODELS = new Set([
   "Payment",
   "Counter",
   "StockAdjustment",
+  "StockBatch",
 ]);
 
 export type TenantContext = {

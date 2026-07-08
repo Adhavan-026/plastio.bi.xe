@@ -15,10 +15,12 @@ type Props = {
     email: string | null;
     address: string | null;
     state: string | null;
+    licenseNumber: string | null;
   };
+  showLicenseNumber: boolean;
 };
 
-export function SettingsForm({ defaultValues }: Props) {
+export function SettingsForm({ defaultValues, showLicenseNumber }: Props) {
   const [state, formAction, pending] = useActionState(updateTenantSettings, undefined);
 
   useEffect(() => {
@@ -71,6 +73,18 @@ export function SettingsForm({ defaultValues }: Props) {
         <Label htmlFor="address">Address</Label>
         <Input id="address" name="address" defaultValue={defaultValues.address ?? ""} />
       </div>
+
+      {showLicenseNumber && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="licenseNumber">Dealer license number</Label>
+          <Input
+            id="licenseNumber"
+            name="licenseNumber"
+            defaultValue={defaultValues.licenseNumber ?? ""}
+          />
+          <p className="text-muted-foreground text-xs">Printed on every invoice.</p>
+        </div>
+      )}
 
       <Button type="submit" disabled={pending} className="mt-2 self-start">
         {pending ? "Saving..." : "Save settings"}

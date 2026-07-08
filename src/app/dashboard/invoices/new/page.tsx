@@ -1,11 +1,14 @@
-import { getTenantDb } from "@/lib/tenant-db";
+import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
+import { prisma } from "@/lib/prisma";
 import { createSalesInvoice } from "@/app/actions/invoices";
-import { InvoiceForm } from "@/components/billing/invoice-form";
+import { InvoiceForm, type BatchOption } from "@/components/billing/invoice-form";
 
 export default async function NewSalesInvoicePage() {
+  const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
 
-  const [products, parties] = await Promise.all([
+  const [tenant, products, parties] = await Promise.all([
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
     db.product.findMany({
       where: { isActive: true },
       select: { id: true, name: true, unit: true, gstRate: true, sellingPrice: true, purchasePrice: true },
@@ -17,6 +20,24 @@ export default async function NewSalesInvoicePage() {
       orderBy: { name: "asc" },
     }),
   ]);
+
+  let batchesByProduct: Record<string, BatchOption[]> | undefined;
+  if (tenant.businessType === "AGRO") {
+    const batches = await db.stockBatch.findMany({
+      where: { quantity: { gt: 0 } },
+      orderBy: { expiryDate: "asc" },
+    });
+    batchesByProduct = {};
+    for (const batch of batches) {
+      const list = (batchesByProduct[batch.productId] ??= []);
+      list.push({
+        id: batch.id,
+        batchNumber: batch.batchNumber,
+        expiryDate: batch.expiryDate ? batch.expiryDate.toLocaleDateString("en-IN") : null,
+        quantity: batch.quantity.toString(),
+      });
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,6 +56,8 @@ export default async function NewSalesInvoicePage() {
         partyLabel="Customer"
         rateField="sellingPrice"
         submitLabel="Create invoice"
+        batchesByProduct={batchesByProduct}
+        showTyreFields={tenant.businessType === "TYRE"}
       />
     </div>
   );

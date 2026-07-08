@@ -23,7 +23,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } }),
     db.invoice.findUnique({
       where: { id },
-      include: { party: true, items: true, payments: { orderBy: { paymentDate: "asc" } } },
+      include: {
+        party: true,
+        items: { include: { batch: { select: { batchNumber: true, expiryDate: true } } } },
+        payments: { orderBy: { paymentDate: "asc" } },
+      },
     }),
   ]);
 
@@ -34,6 +38,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const isPurchase = invoice.type === "PURCHASE";
   const docTitle = isPurchase ? "PURCHASE BILL" : "TAX INVOICE";
   const partyLabel = isPurchase ? "Bill from" : "Bill to";
+  const hasBatches = invoice.items.some((item) => item.batch);
+  const hasTyreInfo = invoice.items.some((item) => item.tyreSerialNumber || item.warrantyMonths);
+  const exchangeValue = Number(invoice.exchangeValue);
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,6 +57,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               {[tenant.state, tenant.phone].filter(Boolean).join(" · ")}
             </p>
             {tenant.gstNumber && <p className="text-sm">GSTIN: {tenant.gstNumber}</p>}
+            {tenant.licenseNumber && <p className="text-sm">License No: {tenant.licenseNumber}</p>}
           </div>
           <div className="text-right">
             <h2 className="text-lg font-semibold">{docTitle}</h2>
@@ -81,12 +89,21 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </Badge>
         </div>
 
+        {(invoice.vehicleNumber || invoice.vehicleType) && (
+          <p className="mt-2 text-sm">
+            <span className="text-muted-foreground">Vehicle: </span>
+            {[invoice.vehicleNumber, invoice.vehicleType].filter(Boolean).join(" · ")}
+          </p>
+        )}
+
         <table className="mt-6 w-full text-sm">
           <thead>
             <tr className="border-b text-left">
               <th className="py-1">#</th>
               <th className="py-1">Item</th>
               <th className="py-1">HSN</th>
+              {hasBatches && <th className="py-1">Batch</th>}
+              {hasTyreInfo && <th className="py-1">Serial # / Warranty</th>}
               <th className="py-1 text-right">Qty</th>
               <th className="py-1 text-right">Rate</th>
               <th className="py-1 text-right">Disc</th>
@@ -108,6 +125,19 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 <td className="py-1">{i + 1}</td>
                 <td className="py-1">{item.description}</td>
                 <td className="py-1">{item.hsnCode ?? "—"}</td>
+                {hasBatches && (
+                  <td className="py-1">
+                    {item.batch
+                      ? `${item.batch.batchNumber}${item.batch.expiryDate ? ` (exp ${item.batch.expiryDate.toLocaleDateString("en-IN")})` : ""}`
+                      : "—"}
+                  </td>
+                )}
+                {hasTyreInfo && (
+                  <td className="py-1">
+                    {item.tyreSerialNumber ?? "—"}
+                    {item.warrantyMonths ? ` / ${item.warrantyMonths}mo` : ""}
+                  </td>
+                )}
                 <td className="py-1 text-right">
                   {Number(item.quantity)} {item.unit}
                 </td>
@@ -162,6 +192,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <span className="text-muted-foreground">Round off</span>
             <span>₹{Number(invoice.roundOff).toFixed(2)}</span>
           </div>
+          {exchangeValue > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Old tyre exchange</span>
+              <span>−₹{exchangeValue.toFixed(2)}</span>
+            </div>
+          )}
           <Separator className="my-1" />
           <div className="flex justify-between text-base font-semibold">
             <span>Total</span>

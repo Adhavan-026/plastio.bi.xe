@@ -11,6 +11,11 @@ export const InvoiceLineSchema = z.object({
   rate: z.coerce.number({ error: "Rate must be a number." }).min(0, { error: "Rate can't be negative." }),
   discountPercent: z.coerce.number().min(0).max(100).default(0),
   gstRate: z.coerce.number().min(0).max(100),
+  // Agro module
+  batchId: z.string().optional().nullable(),
+  // Tyre module
+  tyreSerialNumber: z.string().trim().optional().nullable(),
+  warrantyMonths: z.coerce.number().int().min(0).optional().nullable(),
 });
 
 export const SalesInvoiceFormSchema = z.object({
@@ -21,6 +26,10 @@ export const SalesInvoiceFormSchema = z.object({
   amountPaid: z.coerce.number().min(0).default(0),
   paymentMode: z.enum(PAYMENT_MODES),
   itemsJson: z.string().min(1, { error: "Add at least one item." }),
+  // Tyre module
+  vehicleNumber: z.string().trim().optional().or(z.literal("")),
+  vehicleType: z.string().trim().optional().or(z.literal("")),
+  exchangeValue: z.coerce.number().min(0).default(0),
 });
 
 export type InvoiceLine = z.infer<typeof InvoiceLineSchema>;

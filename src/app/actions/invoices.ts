@@ -52,8 +52,18 @@ async function createInvoiceCore(
     return { errors: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { partyId, invoiceDate, notes, billDiscountPercent, amountPaid, paymentMode, itemsJson } =
-    validatedFields.data;
+  const {
+    partyId,
+    invoiceDate,
+    notes,
+    billDiscountPercent,
+    amountPaid,
+    paymentMode,
+    itemsJson,
+    vehicleNumber,
+    vehicleType,
+    exchangeValue,
+  } = validatedFields.data;
 
   let rawItems: unknown;
   try {
@@ -96,15 +106,37 @@ async function createInvoiceCore(
     for (const p of ownedProducts) hsnByProductId.set(p.id, p.hsnCode);
   }
 
+  // Agro module: batches must belong to this tenant AND to the product the line references.
+  const batchIds = items.map((item) => item.batchId).filter((id): id is string => !!id);
+  if (batchIds.length > 0) {
+    const ownedBatches = await db.stockBatch.findMany({
+      where: { id: { in: batchIds } },
+      select: { id: true, productId: true },
+    });
+    const batchById = new Map(ownedBatches.map((b) => [b.id, b.productId]));
+    const allValid = items.every(
+      (item) => !item.batchId || batchById.get(item.batchId) === item.productId
+    );
+    if (!allValid) {
+      return { message: "One or more selected batches are invalid." };
+    }
+  }
+
   const invoiceDateObj = new Date(invoiceDate);
   const isInterState = isInterStateSupply(tenant.state, party.state);
   const totals = computeInvoiceTotals(items, { billDiscountPercent, isInterState });
 
-  if (amountPaid > totals.totalAmount) {
+  // Tyre module: old-tyre exchange value is a straight, untaxed deduction from the bill.
+  const netTotal = totals.totalAmount - exchangeValue;
+  if (netTotal < 0) {
+    return { errors: { exchangeValue: ["Exchange value can't exceed the bill total."] } };
+  }
+
+  if (amountPaid > netTotal) {
     return { errors: { amountPaid: ["Amount paid can't exceed the invoice total."] } };
   }
 
-  const paymentStatus = amountPaid <= 0 ? "UNPAID" : amountPaid >= totals.totalAmount ? "PAID" : "PARTIAL";
+  const paymentStatus = amountPaid <= 0 ? "UNPAID" : amountPaid >= netTotal ? "PAID" : "PARTIAL";
 
   const invoice = await db.$transaction(async (tx) => {
     const invoiceNumber = await getNextInvoiceNumber(tx, context.tenantId, kind, invoiceDateObj);
@@ -123,9 +155,12 @@ async function createInvoiceCore(
         sgstAmount: totals.sgstAmount,
         igstAmount: totals.igstAmount,
         roundOff: totals.roundOff,
-        totalAmount: totals.totalAmount,
+        totalAmount: netTotal,
         amountPaid,
         paymentStatus,
+        vehicleNumber: vehicleNumber || null,
+        vehicleType: vehicleType || null,
+        exchangeValue,
         notes: notes || null,
         createdByUserId: context.userId,
         items: {
@@ -134,6 +169,9 @@ async function createInvoiceCore(
             productId: item.productId || null,
             hsnCode: item.productId ? (hsnByProductId.get(item.productId) ?? null) : null,
             description: item.description,
+            batchId: item.batchId || null,
+            tyreSerialNumber: item.tyreSerialNumber || null,
+            warrantyMonths: item.warrantyMonths ?? null,
             quantity: item.quantity,
             unit: item.unit,
             rate: item.rate,
@@ -167,6 +205,12 @@ async function createInvoiceCore(
         await tx.product.update({
           where: { id: item.productId },
           data: { stockQty: { [config.stockDirection]: item.quantity } },
+        });
+      }
+      if (item.batchId && config.stockDirection === "decrement") {
+        await tx.stockBatch.update({
+          where: { id: item.batchId },
+          data: { quantity: { decrement: item.quantity } },
         });
       }
     }

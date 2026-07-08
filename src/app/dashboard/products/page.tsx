@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getTenantDb } from "@/lib/tenant-db";
+import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
+import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +14,13 @@ import {
 } from "@/components/ui/table";
 
 export default async function ProductsPage() {
+  const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
-  const products = await db.product.findMany({ orderBy: { createdAt: "desc" } });
+  const [products, tenant] = await Promise.all([
+    db.product.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
+  ]);
+  const isAgro = tenant.businessType === "AGRO";
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,6 +88,16 @@ export default async function ProductsPage() {
                   >
                     Adjust stock
                   </Button>
+                  {isAgro && (
+                    <Button
+                      render={<Link href={`/dashboard/products/${product.id}/batches`} />}
+                      nativeButton={false}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Batches
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             );

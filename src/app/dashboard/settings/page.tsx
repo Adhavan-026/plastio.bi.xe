@@ -22,7 +22,9 @@ export default async function SettingsPage() {
           email: tenant.email,
           address: tenant.address,
           state: tenant.state,
+          licenseNumber: tenant.licenseNumber,
         }}
+        showLicenseNumber={tenant.businessType === "AGRO"}
       />
     </div>
   );
