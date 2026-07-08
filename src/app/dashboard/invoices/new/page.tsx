@@ -11,7 +11,15 @@ export default async function NewSalesInvoicePage() {
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
     db.product.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, unit: true, gstRate: true, sellingPrice: true, purchasePrice: true },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        gstRate: true,
+        sellingPrice: true,
+        purchasePrice: true,
+        stockQty: true,
+      },
       orderBy: { name: "asc" },
     }),
     db.party.findMany({
@@ -51,6 +59,7 @@ export default async function NewSalesInvoicePage() {
           gstRate: p.gstRate.toString(),
           sellingPrice: p.sellingPrice.toString(),
           purchasePrice: p.purchasePrice.toString(),
+          stockQty: p.stockQty.toString(),
         }))}
         parties={parties}
         partyLabel="Customer"
@@ -58,6 +67,7 @@ export default async function NewSalesInvoicePage() {
         submitLabel="Create invoice"
         batchesByProduct={batchesByProduct}
         showTyreFields={tenant.businessType === "TYRE"}
+        draftKey="sales"
       />
     </div>
   );

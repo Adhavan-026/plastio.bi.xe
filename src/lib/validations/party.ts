@@ -19,3 +19,17 @@ export type PartyFormState =
       message?: string;
     }
   | undefined;
+
+export const QuickPartySchema = z.object({
+  name: z.string().min(1, { error: "Name is required." }).trim(),
+  type: z.enum(PARTY_TYPES),
+  phone: z.string().trim().optional().or(z.literal("")),
+});
+
+export type QuickPartyState =
+  | {
+      errors?: Partial<Record<keyof z.infer<typeof QuickPartySchema>, string[]>>;
+      message?: string;
+      party?: { id: string; name: string };
+    }
+  | undefined;

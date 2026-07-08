@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EntityCombobox, type ComboboxOption } from "@/components/billing/entity-combobox";
+import { QuickAddPartyDialog } from "@/components/billing/quick-add-party-dialog";
 import { UNITS } from "@/lib/validations/product";
 import { PAYMENT_MODES } from "@/lib/validations/invoice";
 import type { SalesInvoiceFormState } from "@/lib/validations/invoice";
@@ -31,6 +34,7 @@ type ProductOption = {
   gstRate: string;
   sellingPrice: string;
   purchasePrice: string;
+  stockQty: string;
 };
 
 type PartyOption = {
@@ -57,6 +61,16 @@ type Row = {
   batchId: string | null;
   tyreSerialNumber: string;
   warrantyMonths: string;
+};
+
+type Draft = {
+  partyId: string | null;
+  rows: Row[];
+  billDiscountPercent: string;
+  exchangeValue: string;
+  vehicleNumber: string;
+  vehicleType: string;
+  notes: string;
 };
 
 function emptyRow(): Row {
@@ -88,12 +102,13 @@ function lineTotal(row: Row): number {
 export function InvoiceForm({
   action,
   products,
-  parties,
+  parties: initialParties,
   partyLabel,
   rateField,
   submitLabel,
   batchesByProduct,
   showTyreFields,
+  draftKey,
 }: {
   action: (state: SalesInvoiceFormState, formData: FormData) => Promise<SalesInvoiceFormState>;
   products: ProductOption[];
@@ -105,11 +120,78 @@ export function InvoiceForm({
   batchesByProduct?: Record<string, BatchOption[]>;
   /** Tyre module: show vehicle info, exchange value, and per-line serial/warranty. */
   showTyreFields?: boolean;
+  /** Distinguishes the localStorage draft between the sales and purchase screens. */
+  draftKey: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const [parties, setParties] = useState(initialParties);
+  const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [billDiscountPercent, setBillDiscountPercent] = useState("0");
   const [exchangeValue, setExchangeValue] = useState("0");
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [vehicleType, setVehicleType] = useState("");
+  const [notes, setNotes] = useState("");
+  const [restoredDraft, setRestoredDraft] = useState(false);
+
+  const storageKey = `invoice-draft-${draftKey}`;
+  const hydrated = useRef(false);
+
+  // Restore an in-progress draft on first mount (e.g. after a crashed tab).
+  // localStorage only exists client-side, so this must run in an effect,
+  // not a lazy useState initializer (which also runs during SSR).
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const draft: Draft = JSON.parse(saved);
+        if (draft.rows?.length) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setSelectedPartyId(draft.partyId ?? null);
+          setRows(draft.rows);
+          setBillDiscountPercent(draft.billDiscountPercent ?? "0");
+          setExchangeValue(draft.exchangeValue ?? "0");
+          setVehicleNumber(draft.vehicleNumber ?? "");
+          setVehicleType(draft.vehicleType ?? "");
+          setNotes(draft.notes ?? "");
+          setRestoredDraft(true);
+        }
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+    }
+    hydrated.current = true;
+    // Only ever restore once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave after the initial restore pass, so we don't immediately overwrite
+  // a draft with the form's blank initial state before restoration runs.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const draft: Draft = {
+      partyId: selectedPartyId,
+      rows,
+      billDiscountPercent,
+      exchangeValue,
+      vehicleNumber,
+      vehicleType,
+      notes,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(draft));
+  }, [selectedPartyId, rows, billDiscountPercent, exchangeValue, vehicleNumber, vehicleType, notes, storageKey]);
+
+  function discardDraft() {
+    localStorage.removeItem(storageKey);
+    setSelectedPartyId(null);
+    setRows([emptyRow()]);
+    setBillDiscountPercent("0");
+    setExchangeValue("0");
+    setVehicleNumber("");
+    setVehicleType("");
+    setNotes("");
+    setRestoredDraft(false);
+  }
 
   const previewTotal = useMemo(() => {
     const gross = rows.reduce((sum, row) => sum + lineTotal(row), 0);
@@ -118,25 +200,30 @@ export function InvoiceForm({
     return afterDiscount - (Number(exchangeValue) || 0);
   }, [rows, billDiscountPercent, exchangeValue]);
 
-  const productItems = useMemo(
-    () => ({
-      custom: "Custom item",
-      ...Object.fromEntries(products.map((p) => [p.id, p.name])),
-    }),
-    [products]
-  );
-
-  const partyItems = useMemo(
-    () => Object.fromEntries(parties.map((party) => [party.id, party.name])),
+  const partyComboOptions: ComboboxOption[] = useMemo(
+    () => parties.map((p) => ({ id: p.id, label: p.name })),
     [parties]
+  );
+  const selectedPartyOption = partyComboOptions.find((p) => p.id === selectedPartyId) ?? null;
+
+  const productComboOptions: ComboboxOption[] = useMemo(
+    () =>
+      products.map((p) => ({
+        id: p.id,
+        label: p.name,
+        sublabel: `${Number(p.stockQty)} ${p.unit} in stock · ₹${Number(
+          rateField === "sellingPrice" ? p.sellingPrice : p.purchasePrice
+        ).toFixed(2)}`,
+      })),
+    [products, rateField]
   );
 
   function updateRow(key: string, patch: Partial<Row>) {
     setRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
   }
 
-  function onProductPick(key: string, productId: string) {
-    if (productId === "custom") {
+  function onProductPick(key: string, productId: string | null) {
+    if (!productId) {
       updateRow(key, { productId: null, batchId: null });
       return;
     }
@@ -169,24 +256,46 @@ export function InvoiceForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form
+      action={(formData) => {
+        localStorage.removeItem(storageKey);
+        return formAction(formData);
+      }}
+      className="flex flex-col gap-6"
+    >
       <input type="hidden" name="itemsJson" value={itemsJson} />
+      <input type="hidden" name="partyId" value={selectedPartyId ?? ""} />
+
+      {restoredDraft && (
+        <div className="flex items-center justify-between rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm">
+          <span>Restored an unsaved invoice draft.</span>
+          <Button type="button" variant="ghost" size="sm" onClick={discardDraft}>
+            <X /> Discard
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="partyId">{partyLabel}</Label>
-          <Select name="partyId" items={partyItems}>
-            <SelectTrigger id="partyId" className="w-full">
-              <SelectValue placeholder={`Select ${partyLabel.toLowerCase()}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {parties.map((party) => (
-                <SelectItem key={party.id} value={party.id}>
-                  {party.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <EntityCombobox
+                items={partyComboOptions}
+                value={selectedPartyOption}
+                onValueChange={(item) => setSelectedPartyId(item?.id ?? null)}
+                placeholder={`Search ${partyLabel.toLowerCase()}...`}
+                emptyText={`No ${partyLabel.toLowerCase()} found.`}
+              />
+            </div>
+            <QuickAddPartyDialog
+              defaultType={partyLabel === "Customer" ? "CUSTOMER" : "SUPPLIER"}
+              onCreated={(party) => {
+                setParties((prev) => [...prev, party]);
+                setSelectedPartyId(party.id);
+              }}
+            />
+          </div>
           {state?.errors?.partyId && (
             <p className="text-sm text-destructive">{state.errors.partyId[0]}</p>
           )}
@@ -218,11 +327,23 @@ export function InvoiceForm({
         <div className="grid grid-cols-3 gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="vehicleNumber">Vehicle number</Label>
-            <Input id="vehicleNumber" name="vehicleNumber" placeholder="e.g. TN09AB1234" />
+            <Input
+              id="vehicleNumber"
+              name="vehicleNumber"
+              placeholder="e.g. TN09AB1234"
+              value={vehicleNumber}
+              onChange={(e) => setVehicleNumber(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="vehicleType">Vehicle type</Label>
-            <Input id="vehicleType" name="vehicleType" placeholder="e.g. Car, Bike, Truck" />
+            <Input
+              id="vehicleType"
+              name="vehicleType"
+              placeholder="e.g. Car, Bike, Truck"
+              value={vehicleType}
+              onChange={(e) => setVehicleType(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="exchangeValue">Old tyre exchange value</Label>
@@ -269,26 +390,25 @@ export function InvoiceForm({
             <TableBody>
               {rows.map((row) => {
                 const rowBatches = row.productId ? (batchesByProduct?.[row.productId] ?? []) : [];
+                const selectedProduct = row.productId ? products.find((p) => p.id === row.productId) : undefined;
+                const availableStock = selectedProduct ? Number(selectedProduct.stockQty) : null;
+                const overselling =
+                  rateField === "sellingPrice" &&
+                  availableStock !== null &&
+                  Number(row.quantity) > availableStock;
+                const selectedProductOption =
+                  productComboOptions.find((p) => p.id === row.productId) ?? null;
                 return (
                   <TableRow key={row.key}>
                     <TableCell>
-                      <Select
-                        value={row.productId ?? "custom"}
-                        onValueChange={(v) => onProductPick(row.key, v as string)}
-                        items={productItems}
-                      >
-                        <SelectTrigger className="w-40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="custom">Custom item</SelectItem>
-                          {products.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <EntityCombobox
+                        items={productComboOptions}
+                        value={selectedProductOption}
+                        onValueChange={(item) => onProductPick(row.key, item?.id ?? null)}
+                        placeholder="Search or type custom..."
+                        emptyText="No products found."
+                        className="w-44"
+                      />
                     </TableCell>
                     <TableCell>
                       <Input
@@ -351,7 +471,14 @@ export function InvoiceForm({
                         step="0.001"
                         value={row.quantity}
                         onChange={(e) => updateRow(row.key, { quantity: e.target.value })}
+                        aria-invalid={overselling}
+                        className={overselling ? "border-destructive" : ""}
                       />
+                      {overselling && (
+                        <p className="text-destructive mt-1 text-xs whitespace-nowrap">
+                          Only {availableStock} in stock
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Select value={row.unit} onValueChange={(v) => updateRow(row.key, { unit: v as string })}>
@@ -450,6 +577,8 @@ export function InvoiceForm({
           id="notes"
           name="notes"
           rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           className="border-input dark:bg-input/30 rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         />
       </div>

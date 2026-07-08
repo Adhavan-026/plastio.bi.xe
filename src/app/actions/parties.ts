@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
-import { PartyFormSchema, type PartyFormState } from "@/lib/validations/party";
+import {
+  PartyFormSchema,
+  QuickPartySchema,
+  type PartyFormState,
+  type QuickPartyState,
+} from "@/lib/validations/party";
 
 export async function createParty(
   _state: PartyFormState,
@@ -33,6 +38,38 @@ export async function createParty(
 
   revalidatePath("/dashboard/parties");
   redirect("/dashboard/parties");
+}
+
+/**
+ * Creates a minimal party without redirecting, for the invoice screen's
+ * quick-add dialog — losing in-progress billing to a navigation would
+ * defeat the point of speeding up the billing flow.
+ */
+export async function quickCreateParty(
+  _state: QuickPartyState,
+  formData: FormData
+): Promise<QuickPartyState> {
+  const context = await getTenantContext();
+  requireRole(context, ["OWNER", "MANAGER", "CASHIER"]);
+
+  const validatedFields = QuickPartySchema.safeParse(Object.fromEntries(formData));
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors };
+  }
+
+  const db = await getTenantDb();
+  const { phone, ...rest } = validatedFields.data;
+  const party = await db.party.create({
+    data: {
+      ...rest,
+      phone: phone || null,
+      openingBalance: 0,
+      tenantId: context.tenantId,
+    },
+  });
+
+  revalidatePath("/dashboard/parties");
+  return { party: { id: party.id, name: party.name } };
 }
 
 export async function updateParty(

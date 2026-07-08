@@ -8,7 +8,15 @@ export default async function NewPurchaseInvoicePage() {
   const [products, parties] = await Promise.all([
     db.product.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, unit: true, gstRate: true, sellingPrice: true, purchasePrice: true },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        gstRate: true,
+        sellingPrice: true,
+        purchasePrice: true,
+        stockQty: true,
+      },
       orderBy: { name: "asc" },
     }),
     db.party.findMany({
@@ -30,11 +38,13 @@ export default async function NewPurchaseInvoicePage() {
           gstRate: p.gstRate.toString(),
           sellingPrice: p.sellingPrice.toString(),
           purchasePrice: p.purchasePrice.toString(),
+          stockQty: p.stockQty.toString(),
         }))}
         parties={parties}
         partyLabel="Supplier"
         rateField="purchasePrice"
         submitLabel="Create purchase invoice"
+        draftKey="purchase"
       />
     </div>
   );
