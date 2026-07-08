@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
+import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
+import { SearchBar } from "@/components/list/search-bar";
+import { ListPagination } from "@/components/list/list-pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,13 +20,40 @@ const STATUS_VARIANT: Record<string, "success" | "warning" | "destructive"> = {
   UNPAID: "destructive",
 };
 
-export default async function PurchasesPage() {
+export default async function PurchasesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const q = params.q?.trim() ?? "";
+  const page = resolvePage(params);
+
   const db = await getTenantDb();
-  const invoices = await db.invoice.findMany({
-    where: { type: "PURCHASE" },
-    include: { party: { select: { name: true } } },
-    orderBy: { invoiceDate: "desc" },
-  });
+
+  const where = {
+    type: "PURCHASE" as const,
+    ...(q
+      ? {
+          OR: [
+            { invoiceNumber: { contains: q, mode: "insensitive" as const } },
+            { party: { name: { contains: q, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [invoices, count] = await Promise.all([
+    db.invoice.findMany({
+      where,
+      include: { party: { select: { name: true } } },
+      orderBy: { invoiceDate: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    db.invoice.count({ where }),
+  ]);
+  const totalPages = computeTotalPages(count);
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,6 +63,8 @@ export default async function PurchasesPage() {
           New purchase
         </Button>
       </div>
+
+      <SearchBar placeholder="Search by invoice # or supplier..." defaultValue={q} />
 
       <Table>
         <TableHeader>
@@ -49,7 +81,7 @@ export default async function PurchasesPage() {
           {invoices.length === 0 && (
             <TableRow>
               <TableCell colSpan={6} className="text-muted-foreground text-center">
-                No purchases yet.
+                {q ? `No purchases match "${q}".` : "No purchases yet."}
               </TableCell>
             </TableRow>
           )}
@@ -71,6 +103,8 @@ export default async function PurchasesPage() {
           ))}
         </TableBody>
       </Table>
+
+      <ListPagination page={page} totalPages={totalPages} searchParams={params} />
     </div>
   );
 }

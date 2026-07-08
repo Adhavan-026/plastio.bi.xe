@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { computeBalancesByParty } from "@/lib/billing/party-balance";
+import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
+import { SearchBar } from "@/components/list/search-bar";
+import { ListPagination } from "@/components/list/list-pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,10 +15,34 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default async function PartiesPage() {
+export default async function PartiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const q = params.q?.trim() ?? "";
+  const page = resolvePage(params);
+
   const db = await getTenantDb();
-  const [parties, invoices] = await Promise.all([
-    db.party.findMany({ orderBy: { createdAt: "desc" } }),
+
+  const where = q
+    ? {
+        OR: [
+          { name: { contains: q, mode: "insensitive" as const } },
+          { phone: { contains: q, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  const [parties, count, invoices] = await Promise.all([
+    db.party.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    db.party.count({ where }),
     db.invoice.findMany({
       where: { type: { not: "QUOTATION" } },
       select: { partyId: true, type: true, totalAmount: true, amountPaid: true },
@@ -23,6 +50,7 @@ export default async function PartiesPage() {
   ]);
 
   const dueBalances = computeBalancesByParty(invoices);
+  const totalPages = computeTotalPages(count);
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,6 +60,8 @@ export default async function PartiesPage() {
           Add party
         </Button>
       </div>
+
+      <SearchBar placeholder="Search by name or phone..." defaultValue={q} />
 
       <Table>
         <TableHeader>
@@ -48,7 +78,7 @@ export default async function PartiesPage() {
           {parties.length === 0 && (
             <TableRow>
               <TableCell colSpan={6} className="text-muted-foreground text-center">
-                No parties yet.
+                {q ? `No parties match "${q}".` : "No parties yet."}
               </TableCell>
             </TableRow>
           )}
@@ -94,6 +124,8 @@ export default async function PartiesPage() {
           })}
         </TableBody>
       </Table>
+
+      <ListPagination page={page} totalPages={totalPages} searchParams={params} />
     </div>
   );
 }

@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
+import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
+import { SearchBar } from "@/components/list/search-bar";
+import { ListPagination } from "@/components/list/list-pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,14 +16,39 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const q = params.q?.trim() ?? "";
+  const page = resolvePage(params);
+
   const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
-  const [products, tenant] = await Promise.all([
-    db.product.findMany({ orderBy: { createdAt: "desc" } }),
+
+  const where = q
+    ? {
+        OR: [
+          { name: { contains: q, mode: "insensitive" as const } },
+          { hsnCode: { contains: q, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  const [products, count, tenant] = await Promise.all([
+    db.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    db.product.count({ where }),
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
   ]);
   const isAgro = tenant.businessType === "AGRO";
+  const totalPages = computeTotalPages(count);
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,6 +58,8 @@ export default async function ProductsPage() {
           Add product
         </Button>
       </div>
+
+      <SearchBar placeholder="Search by name or HSN..." defaultValue={q} />
 
       <Table>
         <TableHeader>
@@ -48,7 +78,7 @@ export default async function ProductsPage() {
           {products.length === 0 && (
             <TableRow>
               <TableCell colSpan={8} className="text-muted-foreground text-center">
-                No products yet.
+                {q ? `No products match "${q}".` : "No products yet."}
               </TableCell>
             </TableRow>
           )}
@@ -104,6 +134,8 @@ export default async function ProductsPage() {
           })}
         </TableBody>
       </Table>
+
+      <ListPagination page={page} totalPages={totalPages} searchParams={params} />
     </div>
   );
 }
