@@ -87,6 +87,11 @@ model Tenant {
   logoUrl       String?
   licenseNumber String? // Agro: pesticide/fertilizer dealer license, printed on invoices
 
+  // Invoice editing (owner-controlled): when enabled, OWNER/MANAGER can edit
+  // an invoice's date and details within this many days of the invoice date.
+  allowInvoiceEdit      Boolean @default(false)
+  invoiceEditWindowDays Int     @default(7)
+
   users            User[]
   products         Product[]
   parties          Party[]

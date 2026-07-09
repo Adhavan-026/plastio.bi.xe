@@ -13,12 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { canEditInvoice } from "@/lib/billing/invoice-edit";
 import { PrintButton } from "./print-button";
 import { RecordPaymentForm } from "./record-payment-form";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { tenantId } = await getTenantContext();
+  const { tenantId, role } = await getTenantContext();
   const db = await getTenantDb();
 
   const [tenant, invoice] = await Promise.all([
@@ -47,6 +48,15 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end gap-2 print:hidden">
+        {invoice.type !== "QUOTATION" && canEditInvoice(tenant, invoice, role) && (
+          <Button
+            render={<Link href={`/dashboard/invoices/${invoice.id}/edit`} />}
+            nativeButton={false}
+            variant="outline"
+          >
+            Edit
+          </Button>
+        )}
         <Button
           render={<Link href={isPurchase ? "/dashboard/purchases" : "/dashboard/invoices"} />}
           nativeButton={false}

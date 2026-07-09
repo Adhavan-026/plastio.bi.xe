@@ -17,7 +17,8 @@ export async function updateTenantSettings(
     return { errors: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { name, gstNumber, phone, email, address, state, licenseNumber } = validatedFields.data;
+  const { name, gstNumber, phone, email, address, state, licenseNumber, allowInvoiceEdit, invoiceEditWindowDays } =
+    validatedFields.data;
 
   // Tenant is identified by its own id (== context.tenantId), not a
   // tenantId foreign key, so it's updated via the raw client rather than
@@ -33,6 +34,14 @@ export async function updateTenantSettings(
       address: address || null,
       state,
       licenseNumber: licenseNumber || null,
+      // Only the owner may change the invoice-editing policy; managers'
+      // submissions (which don't render these fields anyway) leave it alone.
+      ...(context.role === "OWNER" && allowInvoiceEdit !== undefined
+        ? { allowInvoiceEdit: allowInvoiceEdit === "true" }
+        : {}),
+      ...(context.role === "OWNER" && invoiceEditWindowDays !== undefined
+        ? { invoiceEditWindowDays }
+        : {}),
     },
   });
 

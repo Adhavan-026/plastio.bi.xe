@@ -54,7 +54,7 @@ export type BatchOption = {
   quantity: string;
 };
 
-type Row = {
+export type Row = {
   key: string;
   productId: string | null;
   description: string;
@@ -159,6 +159,7 @@ export function InvoiceForm({
   isTyreTenant,
   draftKey,
   tenantState,
+  initialInvoice,
 }: {
   action: (state: SalesInvoiceFormState, formData: FormData) => Promise<SalesInvoiceFormState>;
   products: ProductOption[];
@@ -178,19 +179,37 @@ export function InvoiceForm({
   draftKey: string;
   /** The shop's own state, for the live CGST/SGST vs IGST preview. */
   tenantState: string | null;
+  /** Edit mode: pre-fills the form from an existing invoice, hides payment
+   * capture (payments live separately), and disables draft autosave. Row
+   * keys must be deterministic (built server-side) — SSR renders this too. */
+  initialInvoice?: {
+    partyId: string;
+    invoiceDate: string;
+    billDiscountPercent: string;
+    exchangeValue: string;
+    vehicleNumber: string;
+    vehicleType: string;
+    notes: string;
+    rows: Row[];
+  };
 }) {
+  const editMode = !!initialInvoice;
   const [state, formAction, pending] = useActionState(action, undefined);
   const [parties, setParties] = useState(initialParties);
   const [products, setProducts] = useState(initialProducts);
-  const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [selectedPartyId, setSelectedPartyId] = useState<string | null>(
+    initialInvoice?.partyId ?? null
+  );
+  const [rows, setRows] = useState<Row[]>(initialInvoice?.rows ?? []);
   const [rowHistory, setRowHistory] = useState<Row[][]>([]);
   const [quickAddSelection, setQuickAddSelection] = useState<ComboboxOption | null>(null);
-  const [billDiscountPercent, setBillDiscountPercent] = useState("0");
-  const [exchangeValue, setExchangeValue] = useState("0");
-  const [vehicleNumber, setVehicleNumber] = useState("");
-  const [vehicleType, setVehicleType] = useState("");
-  const [notes, setNotes] = useState("");
+  const [billDiscountPercent, setBillDiscountPercent] = useState(
+    initialInvoice?.billDiscountPercent ?? "0"
+  );
+  const [exchangeValue, setExchangeValue] = useState(initialInvoice?.exchangeValue ?? "0");
+  const [vehicleNumber, setVehicleNumber] = useState(initialInvoice?.vehicleNumber ?? "");
+  const [vehicleType, setVehicleType] = useState(initialInvoice?.vehicleType ?? "");
+  const [notes, setNotes] = useState(initialInvoice?.notes ?? "");
   const [paymentMode, setPaymentMode] = useState<string>("CASH");
   const [fixingState, setFixingState] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState(false);
@@ -201,7 +220,9 @@ export function InvoiceForm({
   // Restore an in-progress draft on first mount (e.g. after a crashed tab).
   // localStorage only exists client-side, so this must run in an effect,
   // not a lazy useState initializer (which also runs during SSR).
+  // Edit mode is always pre-filled from the DB — drafts don't apply.
   useEffect(() => {
+    if (editMode) return;
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
@@ -230,7 +251,7 @@ export function InvoiceForm({
   // Autosave after the initial restore pass, so we don't immediately overwrite
   // a draft with the form's blank initial state before restoration runs.
   useEffect(() => {
-    if (!hydrated.current) return;
+    if (editMode || !hydrated.current) return;
     const draft: Draft = {
       partyId: selectedPartyId,
       rows,
@@ -243,6 +264,7 @@ export function InvoiceForm({
     };
     localStorage.setItem(storageKey, JSON.stringify(draft));
   }, [
+    editMode,
     selectedPartyId,
     rows,
     billDiscountPercent,
@@ -402,14 +424,14 @@ export function InvoiceForm({
   return (
     <form
       action={(formData) => {
-        localStorage.removeItem(storageKey);
+        if (!editMode) localStorage.removeItem(storageKey);
         return formAction(formData);
       }}
       className="flex flex-col gap-4"
     >
       <input type="hidden" name="itemsJson" value={itemsJson} />
       <input type="hidden" name="partyId" value={selectedPartyId ?? ""} />
-      <input type="hidden" name="paymentMode" value={paymentMode} />
+      {!editMode && <input type="hidden" name="paymentMode" value={paymentMode} />}
 
       {restoredDraft && (
         <div className="border-warning/40 bg-warning/10 flex items-center justify-between rounded-lg border px-4 py-2 text-sm">
@@ -482,7 +504,7 @@ export function InvoiceForm({
                   id="invoiceDate"
                   name="invoiceDate"
                   type="date"
-                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  defaultValue={initialInvoice?.invoiceDate ?? new Date().toISOString().slice(0, 10)}
                   required
                 />
               </div>
@@ -858,33 +880,41 @@ export function InvoiceForm({
             <p className="text-muted-foreground text-xs">Server recalculates the exact figure on save.</p>
           </div>
 
-          <div className="flex flex-col gap-2 px-5 pb-2">
-            <Label htmlFor="amountPaid">Amount paid now</Label>
-            <Input id="amountPaid" name="amountPaid" type="number" step="0.01" defaultValue="0" />
-            {state?.errors?.amountPaid && (
-              <p className="text-destructive text-sm">{state.errors.amountPaid[0]}</p>
-            )}
-          </div>
+          {editMode ? (
+            <p className="text-muted-foreground px-5 pb-2 text-xs">
+              Recorded payments stay unchanged — manage them from the invoice page.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2 px-5 pb-2">
+                <Label htmlFor="amountPaid">Amount paid now</Label>
+                <Input id="amountPaid" name="amountPaid" type="number" step="0.01" defaultValue="0" />
+                {state?.errors?.amountPaid && (
+                  <p className="text-destructive text-sm">{state.errors.amountPaid[0]}</p>
+                )}
+              </div>
 
-          <div className="flex flex-col gap-2 px-5 py-3">
-            <Label>Payment mode</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {PAYMENT_MODES.map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setPaymentMode(mode)}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                    paymentMode === mode
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-input bg-secondary/40 text-foreground hover:bg-accent"
-                  }`}
-                >
-                  {mode.replace("_", " ")}
-                </button>
-              ))}
-            </div>
-          </div>
+              <div className="flex flex-col gap-2 px-5 py-3">
+                <Label>Payment mode</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PAYMENT_MODES.map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setPaymentMode(mode)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        paymentMode === mode
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-input bg-secondary/40 text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {mode.replace("_", " ")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {state?.message && <p className="text-destructive px-5 text-sm">{state.message}</p>}
 

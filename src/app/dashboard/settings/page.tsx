@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
-  const { tenantId } = await getTenantContext();
+  const { tenantId, role } = await getTenantContext();
   const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
 
   return (
@@ -23,8 +23,11 @@ export default async function SettingsPage() {
           address: tenant.address,
           state: tenant.state,
           licenseNumber: tenant.licenseNumber,
+          allowInvoiceEdit: tenant.allowInvoiceEdit,
+          invoiceEditWindowDays: tenant.invoiceEditWindowDays,
         }}
         showLicenseNumber={tenant.businessType === "AGRO"}
+        isOwner={role === "OWNER"}
       />
     </div>
   );

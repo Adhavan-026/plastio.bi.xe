@@ -11,6 +11,15 @@ export const TenantSettingsSchema = z.object({
   // this matching a party's state exactly, so it must come from a fixed list.
   state: z.enum(INDIAN_STATES, { error: "Select the shop's state." }),
   licenseNumber: z.string().trim().optional().or(z.literal("")),
+  // Owner-only fields, absent from the form for other roles (the action
+  // ignores them unless the caller is OWNER regardless).
+  allowInvoiceEdit: z.enum(["true", "false"]).optional(),
+  invoiceEditWindowDays: z.coerce
+    .number()
+    .int({ error: "Days must be a whole number." })
+    .min(1, { error: "Must allow at least 1 day." })
+    .max(365, { error: "Can't exceed 365 days." })
+    .optional(),
 });
 
 export type TenantSettingsState =

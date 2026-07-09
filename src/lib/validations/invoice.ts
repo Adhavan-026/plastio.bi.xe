@@ -34,6 +34,13 @@ export const SalesInvoiceFormSchema = z.object({
 
 export type InvoiceLine = z.infer<typeof InvoiceLineSchema>;
 
+// Editing an existing invoice: same fields as creation minus payment
+// capture — recorded payments live in their own table and stay untouched.
+export const InvoiceEditFormSchema = SalesInvoiceFormSchema.omit({
+  amountPaid: true,
+  paymentMode: true,
+});
+
 export type SalesInvoiceFormState =
   | {
       errors?: Partial<Record<keyof z.infer<typeof SalesInvoiceFormSchema>, string[]>>;

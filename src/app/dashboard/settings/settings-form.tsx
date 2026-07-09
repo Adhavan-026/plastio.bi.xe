@@ -24,11 +24,14 @@ type Props = {
     address: string | null;
     state: string | null;
     licenseNumber: string | null;
+    allowInvoiceEdit: boolean;
+    invoiceEditWindowDays: number;
   };
   showLicenseNumber: boolean;
+  isOwner: boolean;
 };
 
-export function SettingsForm({ defaultValues, showLicenseNumber }: Props) {
+export function SettingsForm({ defaultValues, showLicenseNumber, isOwner }: Props) {
   const [state, formAction, pending] = useActionState(updateTenantSettings, undefined);
 
   useEffect(() => {
@@ -97,6 +100,50 @@ export function SettingsForm({ defaultValues, showLicenseNumber }: Props) {
             defaultValue={defaultValues.licenseNumber ?? ""}
           />
           <p className="text-muted-foreground text-xs">Printed on every invoice.</p>
+        </div>
+      )}
+
+      {isOwner && (
+        <div className="bg-card flex flex-col gap-4 rounded-xl border p-4 shadow-sm">
+          <div>
+            <h2 className="text-sm font-bold">Invoice editing</h2>
+            <p className="text-muted-foreground text-xs">
+              Owner-only setting. When enabled, owners and managers can edit an invoice&apos;s
+              date and details for a limited number of days after the invoice date.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="allowInvoiceEdit">Allow invoice editing</Label>
+              <Select
+                name="allowInvoiceEdit"
+                defaultValue={defaultValues.allowInvoiceEdit ? "true" : "false"}
+                items={{ false: "Disabled", true: "Enabled" }}
+              >
+                <SelectTrigger id="allowInvoiceEdit" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">Disabled</SelectItem>
+                  <SelectItem value="true">Enabled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="invoiceEditWindowDays">Editable within (days)</Label>
+              <Input
+                id="invoiceEditWindowDays"
+                name="invoiceEditWindowDays"
+                type="number"
+                min="1"
+                max="365"
+                defaultValue={defaultValues.invoiceEditWindowDays}
+              />
+              {state?.errors?.invoiceEditWindowDays && (
+                <p className="text-sm text-destructive">{state.errors.invoiceEditWindowDays[0]}</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
