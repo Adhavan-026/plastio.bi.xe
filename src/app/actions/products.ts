@@ -1,9 +1,65 @@
 "use server";
 
+import * as z from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
-import { ProductFormSchema, type ProductFormState } from "@/lib/validations/product";
+import {
+  ProductFormSchema,
+  ProductLineSchema,
+  type ProductFormState,
+  type ProductBulkFormState,
+} from "@/lib/validations/product";
+
+export async function createProducts(
+  _state: ProductBulkFormState,
+  formData: FormData
+): Promise<ProductBulkFormState> {
+  const context = await getTenantContext();
+  requireRole(context, ["OWNER", "MANAGER"]);
+
+  const itemsJson = formData.get("itemsJson");
+  if (typeof itemsJson !== "string") {
+    return { message: "No products to add." };
+  }
+
+  let rawItems: unknown;
+  try {
+    rawItems = JSON.parse(itemsJson);
+  } catch {
+    return { message: "Invalid product data." };
+  }
+
+  const itemsResult = z.array(ProductLineSchema).min(1, { error: "Add at least one product." }).safeParse(rawItems);
+  if (!itemsResult.success) {
+    const firstIssue = itemsResult.error.issues[0];
+    const rowNumber = typeof firstIssue.path[0] === "number" ? firstIssue.path[0] + 1 : "?";
+    return { message: `Row ${rowNumber}: ${firstIssue.message}` };
+  }
+
+  const db = await getTenantDb();
+  await db.product.createMany({
+    data: itemsResult.data.map((item) => ({
+      tenantId: context.tenantId,
+      name: item.name,
+      hsnCode: item.hsnCode || null,
+      unit: item.unit,
+      category: item.category || null,
+      gstRate: item.gstRate,
+      purchasePrice: item.purchasePrice,
+      sellingPrice: item.sellingPrice,
+      stockQty: item.stockQty,
+      lowStockAlert: item.lowStockAlert,
+      tyreBrand: item.tyreBrand || null,
+      tyreSize: item.tyreSize || null,
+      tyrePattern: item.tyrePattern || null,
+      tyreLoadIndex: item.tyreLoadIndex || null,
+    })),
+  });
+
+  revalidatePath("/dashboard/products");
+  redirect("/dashboard/products");
+}
 
 export async function createProduct(
   _state: ProductFormState,

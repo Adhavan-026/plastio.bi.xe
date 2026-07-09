@@ -1,7 +1,6 @@
 import { getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
-import { createProduct } from "@/app/actions/products";
-import { ProductForm } from "../product-form";
+import { ProductBulkForm } from "../product-bulk-form";
 
 export default async function NewProductPage() {
   const { tenantId } = await getTenantContext();
@@ -12,12 +11,8 @@ export default async function NewProductPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Add product</h1>
-      <ProductForm
-        action={createProduct}
-        submitLabel="Create product"
-        showTyreFields={tenant.businessType === "TYRE"}
-      />
+      <h1 className="text-2xl font-semibold">Add products</h1>
+      <ProductBulkForm showTyreFields={tenant.businessType === "TYRE"} />
     </div>
   );
 }
