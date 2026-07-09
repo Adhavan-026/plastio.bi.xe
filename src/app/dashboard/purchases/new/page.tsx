@@ -19,6 +19,7 @@ export default async function NewPurchaseInvoicePage() {
         sellingPrice: true,
         purchasePrice: true,
         stockQty: true,
+        category: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -42,6 +43,7 @@ export default async function NewPurchaseInvoicePage() {
           sellingPrice: p.sellingPrice.toString(),
           purchasePrice: p.purchasePrice.toString(),
           stockQty: p.stockQty.toString(),
+          category: p.category,
         }))}
         parties={parties}
         partyLabel="Supplier"

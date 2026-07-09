@@ -2,6 +2,18 @@ import * as z from "zod";
 
 export const UNITS = ["PCS", "KG", "LITRE", "BAG", "BOX", "METER", "DOZEN", "OTHER"] as const;
 
+// Tyre module: "category" is repurposed as the vehicle this product fits,
+// shown as a dropdown instead of free text on Tyre-tenant product/invoice forms.
+export const VEHICLE_TYPES = [
+  "Car",
+  "Bike/Scooter",
+  "Auto Rickshaw",
+  "Truck",
+  "Bus",
+  "Tractor",
+  "Other",
+] as const;
+
 export const ProductFormSchema = z.object({
   name: z.string().min(1, { error: "Product name is required." }).trim(),
   hsnCode: z.string().trim().optional().or(z.literal("")),

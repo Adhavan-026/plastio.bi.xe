@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UNITS } from "@/lib/validations/product";
+import { UNITS, VEHICLE_TYPES } from "@/lib/validations/product";
 import type { ProductFormState } from "@/lib/validations/product";
 
 type ProductFormProps = {
@@ -69,8 +69,28 @@ export function ProductForm({ action, defaultValues, submitLabel, showTyreFields
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="category">Category</Label>
-        <Input id="category" name="category" defaultValue={defaultValues?.category ?? ""} />
+        {showTyreFields ? (
+          <>
+            <Label htmlFor="category">Vehicle type / Fit for</Label>
+            <Select name="category" defaultValue={defaultValues?.category ?? undefined}>
+              <SelectTrigger id="category" className="w-full">
+                <SelectValue placeholder="Select vehicle type" />
+              </SelectTrigger>
+              <SelectContent>
+                {VEHICLE_TYPES.map((v) => (
+                  <SelectItem key={v} value={v}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        ) : (
+          <>
+            <Label htmlFor="category">Category</Label>
+            <Input id="category" name="category" defaultValue={defaultValues?.category ?? ""} />
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

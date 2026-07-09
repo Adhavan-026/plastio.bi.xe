@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { EntityCombobox, type ComboboxOption } from "@/components/billing/entity-combobox";
 import { QuickAddPartyDialog } from "@/components/billing/quick-add-party-dialog";
-import { UNITS } from "@/lib/validations/product";
+import { UNITS, VEHICLE_TYPES } from "@/lib/validations/product";
 import { PAYMENT_MODES } from "@/lib/validations/invoice";
 import type { SalesInvoiceFormState } from "@/lib/validations/invoice";
 
@@ -34,6 +34,8 @@ type ProductOption = {
   sellingPrice: string;
   purchasePrice: string;
   stockQty: string;
+  /** Tyre module: the vehicle this product fits (repurposed "category"). */
+  category?: string | null;
 };
 
 type PartyOption = {
@@ -269,7 +271,7 @@ export function InvoiceForm({
         label: p.name,
         sublabel: `${Number(p.stockQty)} ${p.unit} in stock · ₹${Number(
           rateField === "sellingPrice" ? p.sellingPrice : p.purchasePrice
-        ).toFixed(2)}`,
+        ).toFixed(2)}${p.category ? ` · Fits: ${p.category}` : ""}`,
       })),
     [products, rateField]
   );
@@ -435,13 +437,19 @@ export function InvoiceForm({
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="vehicleType">Vehicle type</Label>
-                    <Input
-                      id="vehicleType"
-                      name="vehicleType"
-                      placeholder="e.g. Car, Bike, Truck"
-                      value={vehicleType}
-                      onChange={(e) => setVehicleType(e.target.value)}
-                    />
+                    <input type="hidden" name="vehicleType" value={vehicleType} />
+                    <Select value={vehicleType} onValueChange={(v) => setVehicleType(v as string)}>
+                      <SelectTrigger id="vehicleType" className="w-full">
+                        <SelectValue placeholder="Select vehicle type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VEHICLE_TYPES.map((v) => (
+                          <SelectItem key={v} value={v}>
+                            {v}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="exchangeValue">Old tyre exchange value</Label>
