@@ -66,43 +66,49 @@ export default async function InvoicesPage({
 
       <SearchBar placeholder="Search by invoice # or customer..." defaultValue={q} />
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Invoice #</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="text-right">Paid</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invoices.length === 0 && (
+      <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground text-center">
-                {q ? `No invoices match "${q}".` : "No invoices yet."}
-              </TableCell>
+              <TableHead>Invoice #</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right">Paid</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
-          )}
-          {invoices.map((invoice) => (
-            <TableRow key={invoice.id}>
-              <TableCell className="font-medium">
-                <Link href={`/dashboard/invoices/${invoice.id}`} className="underline underline-offset-4">
-                  {invoice.invoiceNumber}
-                </Link>
-              </TableCell>
-              <TableCell>{invoice.invoiceDate.toLocaleDateString("en-IN")}</TableCell>
-              <TableCell>{invoice.party.name}</TableCell>
-              <TableCell className="text-right">₹{Number(invoice.totalAmount).toFixed(2)}</TableCell>
-              <TableCell className="text-right">₹{Number(invoice.amountPaid).toFixed(2)}</TableCell>
-              <TableCell>
-                <Badge variant={STATUS_VARIANT[invoice.paymentStatus]}>{invoice.paymentStatus}</Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {invoices.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-muted-foreground text-center">
+                  {q ? `No invoices match "${q}".` : "No invoices yet."}
+                </TableCell>
+              </TableRow>
+            )}
+            {invoices.map((invoice) => (
+              <TableRow key={invoice.id}>
+                <TableCell className="font-medium">
+                  <Link href={`/dashboard/invoices/${invoice.id}`} className="underline underline-offset-4">
+                    {invoice.invoiceNumber}
+                  </Link>
+                </TableCell>
+                <TableCell>{invoice.invoiceDate.toLocaleDateString("en-IN")}</TableCell>
+                <TableCell>{invoice.party.name}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  ₹{Number(invoice.totalAmount).toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  ₹{Number(invoice.amountPaid).toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={STATUS_VARIANT[invoice.paymentStatus]}>{invoice.paymentStatus}</Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       <ListPagination page={page} totalPages={totalPages} searchParams={params} />
     </div>

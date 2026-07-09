@@ -61,79 +61,83 @@ export default async function ProductsPage({
 
       <SearchBar placeholder="Search by name or HSN..." defaultValue={q} />
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>HSN</TableHead>
-            <TableHead>Unit</TableHead>
-            <TableHead className="text-right">GST %</TableHead>
-            <TableHead className="text-right">Selling price</TableHead>
-            <TableHead className="text-right">Stock</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.length === 0 && (
+      <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-muted-foreground text-center">
-                {q ? `No products match "${q}".` : "No products yet."}
-              </TableCell>
+              <TableHead>Name</TableHead>
+              <TableHead>HSN</TableHead>
+              <TableHead>Unit</TableHead>
+              <TableHead className="text-right">GST %</TableHead>
+              <TableHead className="text-right">Selling price</TableHead>
+              <TableHead className="text-right">Stock</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead />
             </TableRow>
-          )}
-          {products.map((product) => {
-            const lowStock = isLowStock(product.stockQty, product.lowStockAlert);
-            return (
-              <TableRow key={product.id}>
-                <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>{product.hsnCode ?? "—"}</TableCell>
-                <TableCell>{product.unit}</TableCell>
-                <TableCell className="text-right">{Number(product.gstRate)}%</TableCell>
-                <TableCell className="text-right">₹{Number(product.sellingPrice).toFixed(2)}</TableCell>
-                <TableCell className="text-right">
-                  <span className={lowStock ? "text-destructive font-medium" : ""}>
-                    {Number(product.stockQty)} {product.unit}
-                  </span>
+          </TableHeader>
+          <TableBody>
+            {products.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-muted-foreground text-center">
+                  {q ? `No products match "${q}".` : "No products yet."}
                 </TableCell>
-                <TableCell>
-                  <Badge variant={product.isActive ? "success" : "secondary"}>
-                    {product.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="flex gap-1">
-                  <Button
-                    render={<Link href={`/dashboard/products/${product.id}/edit`} />}
-                    nativeButton={false}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    render={<Link href={`/dashboard/products/${product.id}/adjust-stock`} />}
-                    nativeButton={false}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    Adjust stock
-                  </Button>
-                  {isAgro && (
+              </TableRow>
+            )}
+            {products.map((product) => {
+              const lowStock = isLowStock(product.stockQty, product.lowStockAlert);
+              return (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell>{product.hsnCode ?? "—"}</TableCell>
+                  <TableCell>{product.unit}</TableCell>
+                  <TableCell className="text-right tabular-nums">{Number(product.gstRate)}%</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    ₹{Number(product.sellingPrice).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <span className={lowStock ? "text-destructive font-medium" : ""}>
+                      {Number(product.stockQty)} {product.unit}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={product.isActive ? "success" : "secondary"}>
+                      {product.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="flex gap-1">
                     <Button
-                      render={<Link href={`/dashboard/products/${product.id}/batches`} />}
+                      render={<Link href={`/dashboard/products/${product.id}/edit`} />}
                       nativeButton={false}
                       variant="ghost"
                       size="sm"
                     >
-                      Batches
+                      Edit
                     </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                    <Button
+                      render={<Link href={`/dashboard/products/${product.id}/adjust-stock`} />}
+                      nativeButton={false}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Adjust stock
+                    </Button>
+                    {isAgro && (
+                      <Button
+                        render={<Link href={`/dashboard/products/${product.id}/batches`} />}
+                        nativeButton={false}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Batches
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
 
       <ListPagination page={page} totalPages={totalPages} searchParams={params} />
     </div>
