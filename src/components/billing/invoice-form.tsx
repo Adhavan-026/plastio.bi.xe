@@ -496,13 +496,13 @@ export function InvoiceForm({
                   <TableRow>
                     <TableHead>Item</TableHead>
                     {batchesByProduct && <TableHead>Batch</TableHead>}
-                    {showTyreFields && <TableHead>Serial #</TableHead>}
-                    {showTyreFields && <TableHead className="w-24">Warranty (mo)</TableHead>}
-                    <TableHead className="w-32">Qty</TableHead>
-                    <TableHead className="w-24">Rate</TableHead>
-                    <TableHead className="w-20">Disc %</TableHead>
+                    <TableHead className={showTyreFields ? "w-40" : "w-32"}>Qty</TableHead>
+                    <TableHead className={showTyreFields ? "w-32" : "w-24"}>Rate</TableHead>
+                    {!showTyreFields && <TableHead className="w-20">Disc %</TableHead>}
                     <TableHead className="w-20">GST %</TableHead>
-                    <TableHead className="w-24 text-right">Amount</TableHead>
+                    <TableHead className={showTyreFields ? "w-28 text-right" : "w-24 text-right"}>
+                      Amount
+                    </TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -511,7 +511,7 @@ export function InvoiceForm({
                     <TableRow>
                       <TableCell
                         colSpan={
-                          5 + (batchesByProduct ? 1 : 0) + (showTyreFields ? 2 : 0)
+                          6 + (batchesByProduct ? 1 : 0) + (!showTyreFields ? 1 : 0)
                         }
                         className="text-muted-foreground py-8 text-center text-sm"
                       >
@@ -581,33 +581,15 @@ export function InvoiceForm({
                             )}
                           </TableCell>
                         )}
-                        {showTyreFields && (
-                          <TableCell>
-                            <Input
-                              value={row.tyreSerialNumber}
-                              onChange={(e) => updateRow(row.key, { tyreSerialNumber: e.target.value })}
-                              className="w-28"
-                            />
-                          </TableCell>
-                        )}
-                        {showTyreFields && (
-                          <TableCell>
-                            <Input
-                              type="number"
-                              value={row.warrantyMonths}
-                              onChange={(e) => updateRow(row.key, { warrantyMonths: e.target.value })}
-                            />
-                          </TableCell>
-                        )}
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => stepQuantity(row.key, -1)}
-                              className="border-input bg-secondary/40 hover:bg-accent flex size-6 shrink-0 items-center justify-center rounded border"
+                              className={`border-input bg-secondary/40 hover:bg-accent flex shrink-0 items-center justify-center rounded border ${showTyreFields ? "size-8" : "size-6"}`}
                               aria-label="Decrease quantity"
                             >
-                              <Minus className="size-3" />
+                              <Minus className={showTyreFields ? "size-4" : "size-3"} />
                             </button>
                             <Input
                               type="number"
@@ -615,15 +597,15 @@ export function InvoiceForm({
                               value={row.quantity}
                               onChange={(e) => updateRow(row.key, { quantity: e.target.value })}
                               aria-invalid={overselling}
-                              className={`h-7 w-14 text-center tabular-nums ${overselling ? "border-destructive" : ""}`}
+                              className={`text-center tabular-nums ${showTyreFields ? "h-9 w-16 text-base" : "h-7 w-14"} ${overselling ? "border-destructive" : ""}`}
                             />
                             <button
                               type="button"
                               onClick={() => stepQuantity(row.key, 1)}
-                              className="border-input bg-secondary/40 hover:bg-accent flex size-6 shrink-0 items-center justify-center rounded border"
+                              className={`border-input bg-secondary/40 hover:bg-accent flex shrink-0 items-center justify-center rounded border ${showTyreFields ? "size-8" : "size-6"}`}
                               aria-label="Increase quantity"
                             >
-                              <Plus className="size-3" />
+                              <Plus className={showTyreFields ? "size-4" : "size-3"} />
                             </button>
                           </div>
                           <Select value={row.unit} onValueChange={(v) => updateRow(row.key, { unit: v as string })}>
@@ -650,18 +632,20 @@ export function InvoiceForm({
                             step="0.01"
                             value={row.rate}
                             onChange={(e) => updateRow(row.key, { rate: e.target.value })}
-                            className="tabular-nums"
+                            className={`tabular-nums ${showTyreFields ? "h-9 text-base" : ""}`}
                           />
                         </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={row.discountPercent}
-                            onChange={(e) => updateRow(row.key, { discountPercent: e.target.value })}
-                            className="tabular-nums"
-                          />
-                        </TableCell>
+                        {!showTyreFields && (
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={row.discountPercent}
+                              onChange={(e) => updateRow(row.key, { discountPercent: e.target.value })}
+                              className="tabular-nums"
+                            />
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Input
                             type="number"
@@ -671,7 +655,9 @@ export function InvoiceForm({
                             className="tabular-nums"
                           />
                         </TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">
+                        <TableCell
+                          className={`text-right font-medium tabular-nums ${showTyreFields ? "text-base" : ""}`}
+                        >
                           ₹{lineTotal(row).toFixed(2)}
                         </TableCell>
                         <TableCell>
@@ -735,23 +721,29 @@ export function InvoiceForm({
               </div>
             )}
             {interState ? (
-              <div className="text-muted-foreground flex items-center justify-between">
+              <div
+                className={`text-muted-foreground flex items-center justify-between ${showTyreFields ? "text-base" : ""}`}
+              >
                 <span>IGST</span>
-                <span className="text-foreground font-medium tabular-nums">
+                <span className="text-foreground font-semibold tabular-nums">
                   ₹{totals.igstAmount.toFixed(2)}
                 </span>
               </div>
             ) : (
               <>
-                <div className="text-muted-foreground flex items-center justify-between">
+                <div
+                  className={`text-muted-foreground flex items-center justify-between ${showTyreFields ? "text-base" : ""}`}
+                >
                   <span>CGST</span>
-                  <span className="text-foreground font-medium tabular-nums">
+                  <span className="text-foreground font-semibold tabular-nums">
                     ₹{totals.cgstAmount.toFixed(2)}
                   </span>
                 </div>
-                <div className="text-muted-foreground flex items-center justify-between">
+                <div
+                  className={`text-muted-foreground flex items-center justify-between ${showTyreFields ? "text-base" : ""}`}
+                >
                   <span>SGST</span>
-                  <span className="text-foreground font-medium tabular-nums">
+                  <span className="text-foreground font-semibold tabular-nums">
                     ₹{totals.sgstAmount.toFixed(2)}
                   </span>
                 </div>
