@@ -8,7 +8,7 @@ export default async function NewSalesInvoicePage() {
   const db = await getTenantDb();
 
   const [tenant, products, parties] = await Promise.all([
-    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true, state: true } }),
     db.product.findMany({
       where: { isActive: true },
       select: {
@@ -24,7 +24,7 @@ export default async function NewSalesInvoicePage() {
     }),
     db.party.findMany({
       where: { isActive: true, type: { in: ["CUSTOMER", "BOTH"] } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, state: true },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -68,6 +68,7 @@ export default async function NewSalesInvoicePage() {
         batchesByProduct={batchesByProduct}
         showTyreFields={tenant.businessType === "TYRE"}
         draftKey="sales"
+        tenantState={tenant.state}
       />
     </div>
   );

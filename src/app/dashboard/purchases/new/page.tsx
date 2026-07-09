@@ -1,11 +1,14 @@
-import { getTenantDb } from "@/lib/tenant-db";
+import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
+import { prisma } from "@/lib/prisma";
 import { createPurchaseInvoice } from "@/app/actions/invoices";
 import { InvoiceForm } from "@/components/billing/invoice-form";
 
 export default async function NewPurchaseInvoicePage() {
+  const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
 
-  const [products, parties] = await Promise.all([
+  const [tenant, products, parties] = await Promise.all([
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { state: true } }),
     db.product.findMany({
       where: { isActive: true },
       select: {
@@ -21,7 +24,7 @@ export default async function NewPurchaseInvoicePage() {
     }),
     db.party.findMany({
       where: { isActive: true, type: { in: ["SUPPLIER", "BOTH"] } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, state: true },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -45,6 +48,7 @@ export default async function NewPurchaseInvoicePage() {
         rateField="purchasePrice"
         submitLabel="Create purchase invoice"
         draftKey="purchase"
+        tenantState={tenant.state}
       />
     </div>
   );

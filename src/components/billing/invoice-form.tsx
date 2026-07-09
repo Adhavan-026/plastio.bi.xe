@@ -1,11 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { X, Search, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -40,6 +39,7 @@ type ProductOption = {
 type PartyOption = {
   id: string;
   name: string;
+  state: string | null;
 };
 
 export type BatchOption = {
@@ -71,6 +71,7 @@ type Draft = {
   vehicleNumber: string;
   vehicleType: string;
   notes: string;
+  paymentMode: string;
 };
 
 function emptyRow(): Row {
@@ -99,6 +100,48 @@ function lineTotal(row: Row): number {
   return afterDiscount + (afterDiscount * gstRate) / 100;
 }
 
+/** Client-side mirror of computeInvoiceTotals for a live preview only — the server (src/lib/billing/gst.ts) is authoritative. */
+function computeTotals(rows: Row[], billDiscountPercent: string, isInterState: boolean) {
+  const billDiscount = Number(billDiscountPercent) || 0;
+  let subtotal = 0;
+  let discountAmount = 0;
+  let taxableAmount = 0;
+  let gstAmount = 0;
+
+  for (const row of rows) {
+    const qty = Number(row.quantity) || 0;
+    const rate = Number(row.rate) || 0;
+    const gross = qty * rate;
+    subtotal += gross;
+
+    const itemDiscountPercent = Number(row.discountPercent) || 0;
+    const itemDiscount = (gross * itemDiscountPercent) / 100;
+    const afterItemDiscount = gross - itemDiscount;
+
+    const billDiscountAmt = (afterItemDiscount * billDiscount) / 100;
+    const taxable = afterItemDiscount - billDiscountAmt;
+    discountAmount += itemDiscount + billDiscountAmt;
+    taxableAmount += taxable;
+
+    const gstRate = Number(row.gstRate) || 0;
+    gstAmount += (taxable * gstRate) / 100;
+  }
+
+  return {
+    subtotal,
+    discountAmount,
+    taxableAmount,
+    cgstAmount: isInterState ? 0 : gstAmount / 2,
+    sgstAmount: isInterState ? 0 : gstAmount / 2,
+    igstAmount: isInterState ? gstAmount : 0,
+  };
+}
+
+function isInterState(tenantState: string | null, partyState: string | null | undefined): boolean {
+  if (!tenantState || !partyState) return false;
+  return tenantState.trim().toLowerCase() !== partyState.trim().toLowerCase();
+}
+
 export function InvoiceForm({
   action,
   products,
@@ -109,6 +152,7 @@ export function InvoiceForm({
   batchesByProduct,
   showTyreFields,
   draftKey,
+  tenantState,
 }: {
   action: (state: SalesInvoiceFormState, formData: FormData) => Promise<SalesInvoiceFormState>;
   products: ProductOption[];
@@ -122,16 +166,20 @@ export function InvoiceForm({
   showTyreFields?: boolean;
   /** Distinguishes the localStorage draft between the sales and purchase screens. */
   draftKey: string;
+  /** The shop's own state, for the live CGST/SGST vs IGST preview. */
+  tenantState: string | null;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [parties, setParties] = useState(initialParties);
   const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
-  const [rows, setRows] = useState<Row[]>([emptyRow()]);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [quickAddSelection, setQuickAddSelection] = useState<ComboboxOption | null>(null);
   const [billDiscountPercent, setBillDiscountPercent] = useState("0");
   const [exchangeValue, setExchangeValue] = useState("0");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [notes, setNotes] = useState("");
+  const [paymentMode, setPaymentMode] = useState<string>("CASH");
   const [restoredDraft, setRestoredDraft] = useState(false);
 
   const storageKey = `invoice-draft-${draftKey}`;
@@ -154,6 +202,7 @@ export function InvoiceForm({
           setVehicleNumber(draft.vehicleNumber ?? "");
           setVehicleType(draft.vehicleType ?? "");
           setNotes(draft.notes ?? "");
+          setPaymentMode(draft.paymentMode ?? "CASH");
           setRestoredDraft(true);
         }
       } catch {
@@ -177,34 +226,41 @@ export function InvoiceForm({
       vehicleNumber,
       vehicleType,
       notes,
+      paymentMode,
     };
     localStorage.setItem(storageKey, JSON.stringify(draft));
-  }, [selectedPartyId, rows, billDiscountPercent, exchangeValue, vehicleNumber, vehicleType, notes, storageKey]);
+  }, [
+    selectedPartyId,
+    rows,
+    billDiscountPercent,
+    exchangeValue,
+    vehicleNumber,
+    vehicleType,
+    notes,
+    paymentMode,
+    storageKey,
+  ]);
 
   function discardDraft() {
     localStorage.removeItem(storageKey);
     setSelectedPartyId(null);
-    setRows([emptyRow()]);
+    setRows([]);
     setBillDiscountPercent("0");
     setExchangeValue("0");
     setVehicleNumber("");
     setVehicleType("");
     setNotes("");
+    setPaymentMode("CASH");
     setRestoredDraft(false);
   }
-
-  const previewTotal = useMemo(() => {
-    const gross = rows.reduce((sum, row) => sum + lineTotal(row), 0);
-    const discount = Number(billDiscountPercent) || 0;
-    const afterDiscount = gross - (gross * discount) / 100;
-    return afterDiscount - (Number(exchangeValue) || 0);
-  }, [rows, billDiscountPercent, exchangeValue]);
 
   const partyComboOptions: ComboboxOption[] = useMemo(
     () => parties.map((p) => ({ id: p.id, label: p.name })),
     [parties]
   );
   const selectedPartyOption = partyComboOptions.find((p) => p.id === selectedPartyId) ?? null;
+  const selectedParty = parties.find((p) => p.id === selectedPartyId);
+  const interState = isInterState(tenantState, selectedParty?.state);
 
   const productComboOptions: ComboboxOption[] = useMemo(
     () =>
@@ -218,8 +274,34 @@ export function InvoiceForm({
     [products, rateField]
   );
 
+  const totals = useMemo(
+    () => computeTotals(rows, billDiscountPercent, interState),
+    [rows, billDiscountPercent, interState]
+  );
+  const grandTotal =
+    totals.taxableAmount +
+    totals.cgstAmount +
+    totals.sgstAmount +
+    totals.igstAmount -
+    (Number(exchangeValue) || 0);
+
   function updateRow(key: string, patch: Partial<Row>) {
     setRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+  }
+
+  function buildRowFromProduct(productId: string): Row | null {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return null;
+    const batches = batchesByProduct?.[productId] ?? [];
+    return {
+      ...emptyRow(),
+      productId: product.id,
+      description: product.name,
+      unit: product.unit,
+      rate: rateField === "sellingPrice" ? product.sellingPrice : product.purchasePrice,
+      gstRate: product.gstRate,
+      batchId: batches[0]?.id ?? null,
+    };
   }
 
   function onProductPick(key: string, productId: string | null) {
@@ -227,17 +309,25 @@ export function InvoiceForm({
       updateRow(key, { productId: null, batchId: null });
       return;
     }
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-    const batches = batchesByProduct?.[productId] ?? [];
-    updateRow(key, {
-      productId: product.id,
-      description: product.name,
-      unit: product.unit,
-      rate: rateField === "sellingPrice" ? product.sellingPrice : product.purchasePrice,
-      gstRate: product.gstRate,
-      batchId: batches[0]?.id ?? null,
-    });
+    const built = buildRowFromProduct(productId);
+    if (built) updateRow(key, built);
+  }
+
+  function onQuickAdd(item: ComboboxOption | null) {
+    if (!item) return;
+    const row = buildRowFromProduct(item.id);
+    if (row) setRows((prev) => [...prev, row]);
+    setQuickAddSelection(null);
+  }
+
+  function stepQuantity(key: string, delta: number) {
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.key !== key) return row;
+        const next = Math.max(0, (Number(row.quantity) || 0) + delta);
+        return { ...row, quantity: String(next) };
+      })
+    );
   }
 
   const itemsJson = JSON.stringify(
@@ -261,13 +351,14 @@ export function InvoiceForm({
         localStorage.removeItem(storageKey);
         return formAction(formData);
       }}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-4"
     >
       <input type="hidden" name="itemsJson" value={itemsJson} />
       <input type="hidden" name="partyId" value={selectedPartyId ?? ""} />
+      <input type="hidden" name="paymentMode" value={paymentMode} />
 
       {restoredDraft && (
-        <div className="flex items-center justify-between rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm">
+        <div className="border-warning/40 bg-warning/10 flex items-center justify-between rounded-lg border px-4 py-2 text-sm">
           <span>Restored an unsaved invoice draft.</span>
           <Button type="button" variant="ghost" size="sm" onClick={discardDraft}>
             <X /> Discard
@@ -275,319 +366,443 @@ export function InvoiceForm({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="partyId">{partyLabel}</Label>
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <EntityCombobox
-                items={partyComboOptions}
-                value={selectedPartyOption}
-                onValueChange={(item) => setSelectedPartyId(item?.id ?? null)}
-                placeholder={`Search ${partyLabel.toLowerCase()}...`}
-                emptyText={`No ${partyLabel.toLowerCase()} found.`}
-              />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px] lg:items-start">
+        {/* ---------------- Left column ---------------- */}
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="bg-card rounded-xl border shadow-sm">
+            <div className="border-b px-5 py-3.5">
+              <h2 className="text-sm font-bold">{partyLabel} &amp; invoice details</h2>
             </div>
-            <QuickAddPartyDialog
-              defaultType={partyLabel === "Customer" ? "CUSTOMER" : "SUPPLIER"}
-              onCreated={(party) => {
-                setParties((prev) => [...prev, party]);
-                setSelectedPartyId(party.id);
-              }}
-            />
-          </div>
-          {state?.errors?.partyId && (
-            <p className="text-sm text-destructive">{state.errors.partyId[0]}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="invoiceDate">Invoice date</Label>
-          <Input
-            id="invoiceDate"
-            name="invoiceDate"
-            type="date"
-            defaultValue={new Date().toISOString().slice(0, 10)}
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="billDiscountPercent">Bill discount %</Label>
-          <Input
-            id="billDiscountPercent"
-            name="billDiscountPercent"
-            type="number"
-            step="0.01"
-            value={billDiscountPercent}
-            onChange={(e) => setBillDiscountPercent(e.target.value)}
-          />
-        </div>
-      </div>
+            <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-3">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="partyId">{partyLabel}</Label>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <EntityCombobox
+                      items={partyComboOptions}
+                      value={selectedPartyOption}
+                      onValueChange={(item) => setSelectedPartyId(item?.id ?? null)}
+                      placeholder={`Search ${partyLabel.toLowerCase()}...`}
+                      emptyText={`No ${partyLabel.toLowerCase()} found.`}
+                    />
+                  </div>
+                  <QuickAddPartyDialog
+                    defaultType={partyLabel === "Customer" ? "CUSTOMER" : "SUPPLIER"}
+                    onCreated={(party) => {
+                      setParties((prev) => [...prev, { ...party, state: null }]);
+                      setSelectedPartyId(party.id);
+                    }}
+                  />
+                </div>
+                {state?.errors?.partyId && (
+                  <p className="text-destructive text-sm">{state.errors.partyId[0]}</p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="invoiceDate">Invoice date</Label>
+                <Input
+                  id="invoiceDate"
+                  name="invoiceDate"
+                  type="date"
+                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="billDiscountPercent">Bill discount %</Label>
+                <Input
+                  id="billDiscountPercent"
+                  name="billDiscountPercent"
+                  type="number"
+                  step="0.01"
+                  value={billDiscountPercent}
+                  onChange={(e) => setBillDiscountPercent(e.target.value)}
+                />
+              </div>
 
-      {showTyreFields && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="vehicleNumber">Vehicle number</Label>
-            <Input
-              id="vehicleNumber"
-              name="vehicleNumber"
-              placeholder="e.g. TN09AB1234"
-              value={vehicleNumber}
-              onChange={(e) => setVehicleNumber(e.target.value)}
-            />
+              {showTyreFields && (
+                <>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="vehicleNumber">Vehicle number</Label>
+                    <Input
+                      id="vehicleNumber"
+                      name="vehicleNumber"
+                      placeholder="e.g. TN09AB1234"
+                      value={vehicleNumber}
+                      onChange={(e) => setVehicleNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="vehicleType">Vehicle type</Label>
+                    <Input
+                      id="vehicleType"
+                      name="vehicleType"
+                      placeholder="e.g. Car, Bike, Truck"
+                      value={vehicleType}
+                      onChange={(e) => setVehicleType(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="exchangeValue">Old tyre exchange value</Label>
+                    <Input
+                      id="exchangeValue"
+                      name="exchangeValue"
+                      type="number"
+                      step="0.01"
+                      value={exchangeValue}
+                      onChange={(e) => setExchangeValue(e.target.value)}
+                    />
+                    {state?.errors?.exchangeValue && (
+                      <p className="text-destructive text-sm">{state.errors.exchangeValue[0]}</p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="vehicleType">Vehicle type</Label>
-            <Input
-              id="vehicleType"
-              name="vehicleType"
-              placeholder="e.g. Car, Bike, Truck"
-              value={vehicleType}
-              onChange={(e) => setVehicleType(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="exchangeValue">Old tyre exchange value</Label>
-            <Input
-              id="exchangeValue"
-              name="exchangeValue"
-              type="number"
-              step="0.01"
-              value={exchangeValue}
-              onChange={(e) => setExchangeValue(e.target.value)}
-            />
-            {state?.errors?.exchangeValue && (
-              <p className="text-sm text-destructive">{state.errors.exchangeValue[0]}</p>
-            )}
-          </div>
-        </div>
-      )}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Items</CardTitle>
-          <Button type="button" variant="outline" size="sm" onClick={() => setRows((prev) => [...prev, emptyRow()])}>
-            Add item
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Description</TableHead>
-                {batchesByProduct && <TableHead>Batch</TableHead>}
-                {showTyreFields && <TableHead>Serial #</TableHead>}
-                {showTyreFields && <TableHead className="w-24">Warranty (mo)</TableHead>}
-                <TableHead className="w-20">Qty</TableHead>
-                <TableHead className="w-24">Unit</TableHead>
-                <TableHead className="w-24">Rate</TableHead>
-                <TableHead className="w-20">Disc %</TableHead>
-                <TableHead className="w-20">GST %</TableHead>
-                <TableHead className="w-24 text-right">Line total</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => {
-                const rowBatches = row.productId ? (batchesByProduct?.[row.productId] ?? []) : [];
-                const selectedProduct = row.productId ? products.find((p) => p.id === row.productId) : undefined;
-                const availableStock = selectedProduct ? Number(selectedProduct.stockQty) : null;
-                const overselling =
-                  rateField === "sellingPrice" &&
-                  availableStock !== null &&
-                  Number(row.quantity) > availableStock;
-                const selectedProductOption =
-                  productComboOptions.find((p) => p.id === row.productId) ?? null;
-                return (
-                  <TableRow key={row.key}>
-                    <TableCell>
-                      <EntityCombobox
-                        items={productComboOptions}
-                        value={selectedProductOption}
-                        onValueChange={(item) => onProductPick(row.key, item?.id ?? null)}
-                        placeholder="Search or type custom..."
-                        emptyText="No products found."
-                        className="w-44"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.description}
-                        onChange={(e) => updateRow(row.key, { description: e.target.value })}
-                        className="min-w-40"
-                      />
-                    </TableCell>
-                    {batchesByProduct && (
-                      <TableCell>
-                        {rowBatches.length > 0 ? (
-                          <Select
-                            value={row.batchId ?? ""}
-                            onValueChange={(v) => updateRow(row.key, { batchId: v as string })}
-                            items={Object.fromEntries(
-                              rowBatches.map((b) => [
-                                b.id,
-                                `${b.batchNumber}${b.expiryDate ? ` (exp ${b.expiryDate})` : ""}`,
-                              ])
+          <div className="bg-card rounded-xl border shadow-sm">
+            <div className="border-b px-5 py-3.5">
+              <h2 className="text-sm font-bold">Items</h2>
+            </div>
+            <div className="p-5 pb-0">
+              <div className="border-input bg-secondary/30 focus-within:border-primary flex items-center gap-2 rounded-lg border border-dashed px-3 py-1">
+                <Search className="text-muted-foreground size-4 shrink-0" />
+                <div className="flex-1">
+                  <EntityCombobox
+                    items={productComboOptions}
+                    value={quickAddSelection}
+                    onValueChange={onQuickAdd}
+                    placeholder="Search or scan an item to add it..."
+                    emptyText="No products found."
+                    className="border-none bg-transparent px-0 shadow-none focus-visible:ring-0"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    {batchesByProduct && <TableHead>Batch</TableHead>}
+                    {showTyreFields && <TableHead>Serial #</TableHead>}
+                    {showTyreFields && <TableHead className="w-24">Warranty (mo)</TableHead>}
+                    <TableHead className="w-32">Qty</TableHead>
+                    <TableHead className="w-24">Rate</TableHead>
+                    <TableHead className="w-20">Disc %</TableHead>
+                    <TableHead className="w-20">GST %</TableHead>
+                    <TableHead className="w-24 text-right">Amount</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={
+                          5 + (batchesByProduct ? 1 : 0) + (showTyreFields ? 2 : 0)
+                        }
+                        className="text-muted-foreground py-8 text-center text-sm"
+                      >
+                        No items yet — search above to add one.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {rows.map((row) => {
+                    const rowBatches = row.productId ? (batchesByProduct?.[row.productId] ?? []) : [];
+                    const selectedProduct = row.productId
+                      ? products.find((p) => p.id === row.productId)
+                      : undefined;
+                    const availableStock = selectedProduct ? Number(selectedProduct.stockQty) : null;
+                    const overselling =
+                      rateField === "sellingPrice" &&
+                      availableStock !== null &&
+                      Number(row.quantity) > availableStock;
+                    const selectedProductOption =
+                      productComboOptions.find((p) => p.id === row.productId) ?? null;
+                    return (
+                      <TableRow key={row.key}>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <EntityCombobox
+                              items={productComboOptions}
+                              value={selectedProductOption}
+                              onValueChange={(item) => onProductPick(row.key, item?.id ?? null)}
+                              placeholder="Search or type custom..."
+                              emptyText="No products found."
+                              className="w-44"
+                            />
+                            <Input
+                              value={row.description}
+                              onChange={(e) => updateRow(row.key, { description: e.target.value })}
+                              placeholder="Description"
+                              className="text-muted-foreground h-7 w-44 text-xs"
+                            />
+                          </div>
+                        </TableCell>
+                        {batchesByProduct && (
+                          <TableCell>
+                            {rowBatches.length > 0 ? (
+                              <Select
+                                value={row.batchId ?? ""}
+                                onValueChange={(v) => updateRow(row.key, { batchId: v as string })}
+                                items={Object.fromEntries(
+                                  rowBatches.map((b) => [
+                                    b.id,
+                                    `${b.batchNumber}${b.expiryDate ? ` (exp ${b.expiryDate})` : ""}`,
+                                  ])
+                                )}
+                              >
+                                <SelectTrigger className="w-40">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {rowBatches.map((b) => (
+                                    <SelectItem key={b.id} value={b.id}>
+                                      {b.batchNumber}
+                                      {b.expiryDate ? ` (exp ${b.expiryDate})` : ""}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
-                          >
-                            <SelectTrigger className="w-40">
+                          </TableCell>
+                        )}
+                        {showTyreFields && (
+                          <TableCell>
+                            <Input
+                              value={row.tyreSerialNumber}
+                              onChange={(e) => updateRow(row.key, { tyreSerialNumber: e.target.value })}
+                              className="w-28"
+                            />
+                          </TableCell>
+                        )}
+                        {showTyreFields && (
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={row.warrantyMonths}
+                              onChange={(e) => updateRow(row.key, { warrantyMonths: e.target.value })}
+                            />
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => stepQuantity(row.key, -1)}
+                              className="border-input bg-secondary/40 hover:bg-accent flex size-6 shrink-0 items-center justify-center rounded border"
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus className="size-3" />
+                            </button>
+                            <Input
+                              type="number"
+                              step="0.001"
+                              value={row.quantity}
+                              onChange={(e) => updateRow(row.key, { quantity: e.target.value })}
+                              aria-invalid={overselling}
+                              className={`h-7 w-14 text-center tabular-nums ${overselling ? "border-destructive" : ""}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => stepQuantity(row.key, 1)}
+                              className="border-input bg-secondary/40 hover:bg-accent flex size-6 shrink-0 items-center justify-center rounded border"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="size-3" />
+                            </button>
+                          </div>
+                          <Select value={row.unit} onValueChange={(v) => updateRow(row.key, { unit: v as string })}>
+                            <SelectTrigger className="mt-1 h-6 w-full text-xs" size="sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {rowBatches.map((b) => (
-                                <SelectItem key={b.id} value={b.id}>
-                                  {b.batchNumber}
-                                  {b.expiryDate ? ` (exp ${b.expiryDate})` : ""}
+                              {UNITS.map((unit) => (
+                                <SelectItem key={unit} value={unit}>
+                                  {unit}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {showTyreFields && (
-                      <TableCell>
-                        <Input
-                          value={row.tyreSerialNumber}
-                          onChange={(e) => updateRow(row.key, { tyreSerialNumber: e.target.value })}
-                          className="w-28"
-                        />
-                      </TableCell>
-                    )}
-                    {showTyreFields && (
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={row.warrantyMonths}
-                          onChange={(e) => updateRow(row.key, { warrantyMonths: e.target.value })}
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.001"
-                        value={row.quantity}
-                        onChange={(e) => updateRow(row.key, { quantity: e.target.value })}
-                        aria-invalid={overselling}
-                        className={overselling ? "border-destructive" : ""}
-                      />
-                      {overselling && (
-                        <p className="text-destructive mt-1 text-xs whitespace-nowrap">
-                          Only {availableStock} in stock
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Select value={row.unit} onValueChange={(v) => updateRow(row.key, { unit: v as string })}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {UNITS.map((unit) => (
-                            <SelectItem key={unit} value={unit}>
-                              {unit}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={row.rate}
-                        onChange={(e) => updateRow(row.key, { rate: e.target.value })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={row.discountPercent}
-                        onChange={(e) => updateRow(row.key, { discountPercent: e.target.value })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={row.gstRate}
-                        onChange={(e) => updateRow(row.key, { gstRate: e.target.value })}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">₹{lineTotal(row).toFixed(2)}</TableCell>
-                    <TableCell>
-                      {rows.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-          {state?.errors?.itemsJson && (
-            <p className="mt-2 text-sm text-destructive">{state.errors.itemsJson[0]}</p>
-          )}
-        </CardContent>
-      </Card>
+                          {overselling && (
+                            <p className="text-destructive mt-1 text-xs whitespace-nowrap">
+                              Only {availableStock} in stock
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={row.rate}
+                            onChange={(e) => updateRow(row.key, { rate: e.target.value })}
+                            className="tabular-nums"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={row.discountPercent}
+                            onChange={(e) => updateRow(row.key, { discountPercent: e.target.value })}
+                            className="tabular-nums"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={row.gstRate}
+                            onChange={(e) => updateRow(row.key, { gstRate: e.target.value })}
+                            className="tabular-nums"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          ₹{lineTotal(row).toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            type="button"
+                            onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
+                            className="text-muted-foreground hover:text-destructive p-1"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            {state?.errors?.itemsJson && (
+              <p className="text-destructive px-5 pb-4 text-sm">{state.errors.itemsJson[0]}</p>
+            )}
+            {rows.length === 0 && !state?.errors?.itemsJson && <div className="pb-2" />}
+          </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="amountPaid">Amount paid now</Label>
-          <Input id="amountPaid" name="amountPaid" type="number" step="0.01" defaultValue="0" />
-          {state?.errors?.amountPaid && (
-            <p className="text-sm text-destructive">{state.errors.amountPaid[0]}</p>
-          )}
+          <div className="bg-card rounded-xl border shadow-sm">
+            <div className="border-b px-5 py-3.5">
+              <h2 className="text-sm font-bold">Notes</h2>
+            </div>
+            <div className="p-5">
+              <textarea
+                id="notes"
+                name="notes"
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Optional note printed on the invoice..."
+                className="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-3"
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="paymentMode">Payment mode</Label>
-          <Select name="paymentMode" defaultValue="CASH">
-            <SelectTrigger id="paymentMode" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+
+        {/* ---------------- Sticky summary ---------------- */}
+        <div className="bg-card sticky top-4 flex flex-col rounded-xl border shadow-sm">
+          <div className="border-b px-5 py-3.5">
+            <h2 className="text-sm font-bold">Bill summary</h2>
+          </div>
+          <div className="flex flex-col gap-2.5 px-5 py-4 text-sm">
+            <div className="text-muted-foreground flex items-center justify-between">
+              <span>Subtotal</span>
+              <span className="text-foreground font-medium tabular-nums">
+                ₹{totals.subtotal.toFixed(2)}
+              </span>
+            </div>
+            {totals.discountAmount > 0 && (
+              <div className="text-muted-foreground flex items-center justify-between">
+                <span>Discount</span>
+                <span className="text-foreground font-medium tabular-nums">
+                  −₹{totals.discountAmount.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {interState ? (
+              <div className="text-muted-foreground flex items-center justify-between">
+                <span>IGST</span>
+                <span className="text-foreground font-medium tabular-nums">
+                  ₹{totals.igstAmount.toFixed(2)}
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="text-muted-foreground flex items-center justify-between">
+                  <span>CGST</span>
+                  <span className="text-foreground font-medium tabular-nums">
+                    ₹{totals.cgstAmount.toFixed(2)}
+                  </span>
+                </div>
+                <div className="text-muted-foreground flex items-center justify-between">
+                  <span>SGST</span>
+                  <span className="text-foreground font-medium tabular-nums">
+                    ₹{totals.sgstAmount.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
+            {showTyreFields && Number(exchangeValue) > 0 && (
+              <div className="text-muted-foreground flex items-center justify-between">
+                <span>Old tyre exchange</span>
+                <span className="text-foreground font-medium tabular-nums">
+                  −₹{Number(exchangeValue).toFixed(2)}
+                </span>
+              </div>
+            )}
+            <div className="my-1 border-t" />
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm font-bold">Total payable</span>
+              <span className="text-primary text-2xl font-bold tabular-nums">
+                ₹{grandTotal.toFixed(2)}
+              </span>
+            </div>
+            <p className="text-muted-foreground text-xs">Server recalculates the exact figure on save.</p>
+          </div>
+
+          <div className="flex flex-col gap-2 px-5 pb-2">
+            <Label htmlFor="amountPaid">Amount paid now</Label>
+            <Input id="amountPaid" name="amountPaid" type="number" step="0.01" defaultValue="0" />
+            {state?.errors?.amountPaid && (
+              <p className="text-destructive text-sm">{state.errors.amountPaid[0]}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2 px-5 py-3">
+            <Label>Payment mode</Label>
+            <div className="flex flex-wrap gap-1.5">
               {PAYMENT_MODES.map((mode) => (
-                <SelectItem key={mode} value={mode}>
-                  {mode}
-                </SelectItem>
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setPaymentMode(mode)}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                    paymentMode === mode
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "border-input bg-secondary/40 text-foreground hover:bg-accent"
+                  }`}
+                >
+                  {mode.replace("_", " ")}
+                </button>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col justify-end gap-1 text-right">
-          <p className="text-muted-foreground text-sm">Estimated total (server recalculates exactly)</p>
-          <p className="text-2xl font-semibold">₹{previewTotal.toFixed(2)}</p>
+            </div>
+          </div>
+
+          {state?.message && <p className="text-destructive px-5 text-sm">{state.message}</p>}
+
+          <div className="mt-1 flex flex-col gap-2 border-t px-5 py-4">
+            <Button type="submit" disabled={pending} className="w-full justify-center">
+              {pending ? "Saving..." : submitLabel}
+            </Button>
+          </div>
         </div>
       </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="notes">Notes</Label>
-        <textarea
-          id="notes"
-          name="notes"
-          rows={2}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="border-input dark:bg-input/30 rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
-      </div>
-
-      {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
-
-      <Button type="submit" disabled={pending} className="self-start">
-        {pending ? "Saving invoice..." : submitLabel}
-      </Button>
     </form>
   );
 }
