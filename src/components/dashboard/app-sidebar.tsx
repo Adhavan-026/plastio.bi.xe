@@ -25,6 +25,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
@@ -40,6 +41,8 @@ export function AppSidebar({
   role: string;
 }) {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
+  const closeMobile = () => setOpenMobile(false);
 
   const inventoryItems: NavItem[] = [
     { href: "/dashboard/products", label: "Products", icon: Package },
@@ -79,7 +82,12 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/dashboard" />} isActive={pathname === "/dashboard"}>
+            <SidebarMenuButton
+              size="lg"
+              render={<Link href="/dashboard" />}
+              isActive={pathname === "/dashboard"}
+              onClick={closeMobile}
+            >
               <LayoutDashboard />
               <div className="flex flex-col leading-tight">
                 <span className="font-semibold">{tenantName}</span>
@@ -103,6 +111,7 @@ export function AppSidebar({
                       render={<Link href={item.href} />}
                       isActive={isActive(item.href)}
                       tooltip={item.label}
+                      onClick={closeMobile}
                     >
                       <item.icon />
                       <span>{item.label}</span>
@@ -121,6 +130,7 @@ export function AppSidebar({
               render={<Link href="/dashboard/settings" />}
               isActive={isActive("/dashboard/settings")}
               tooltip="Settings"
+              onClick={closeMobile}
             >
               <Settings />
               <span>Settings</span>
