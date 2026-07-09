@@ -388,8 +388,9 @@ export function InvoiceForm({
                   </div>
                   <QuickAddPartyDialog
                     defaultType={partyLabel === "Customer" ? "CUSTOMER" : "SUPPLIER"}
+                    tenantState={tenantState}
                     onCreated={(party) => {
-                      setParties((prev) => [...prev, { ...party, state: null }]);
+                      setParties((prev) => [...prev, party]);
                       setSelectedPartyId(party.id);
                     }}
                   />

@@ -6,6 +6,14 @@ import { updateTenantSettings } from "@/app/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { INDIAN_STATES } from "@/lib/validations/states";
 
 type Props = {
   defaultValues: {
@@ -42,15 +50,21 @@ export function SettingsForm({ defaultValues, showLicenseNumber }: Props) {
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="state">State</Label>
-          <Input
-            id="state"
-            name="state"
-            placeholder="e.g. Tamil Nadu"
-            defaultValue={defaultValues.state ?? ""}
-          />
+          <Select name="state" defaultValue={defaultValues.state ?? undefined}>
+            <SelectTrigger id="state" className="w-full">
+              <SelectValue placeholder="Select state" />
+            </SelectTrigger>
+            <SelectContent>
+              {INDIAN_STATES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {state?.errors?.state && <p className="text-sm text-destructive">{state.errors.state[0]}</p>}
           <p className="text-muted-foreground text-xs">
-            Used to work out CGST+SGST vs IGST on invoices — must match how you enter customer
-            state.
+            Used to work out CGST+SGST vs IGST on invoices — must match each customer&apos;s state.
           </p>
         </div>
       </div>

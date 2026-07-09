@@ -31,7 +31,7 @@ export async function updateTenantSettings(
       phone: phone || null,
       email: email || null,
       address: address || null,
-      state: state || null,
+      state,
       licenseNumber: licenseNumber || null,
     },
   });

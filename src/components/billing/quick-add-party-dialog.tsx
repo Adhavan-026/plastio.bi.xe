@@ -7,19 +7,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { INDIAN_STATES } from "@/lib/validations/states";
 
 export function QuickAddPartyDialog({
   defaultType,
+  tenantState,
   onCreated,
 }: {
   defaultType: "CUSTOMER" | "SUPPLIER";
-  onCreated: (party: { id: string; name: string }) => void;
+  /** Pre-selects the dialog's state field, since most quick-added parties are local. */
+  tenantState: string | null;
+  onCreated: (party: { id: string; name: string; state: string }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(quickCreateParty, undefined);
@@ -55,6 +66,27 @@ export function QuickAddPartyDialog({
           <div className="flex flex-col gap-2">
             <Label htmlFor="quick-party-phone">Phone</Label>
             <Input id="quick-party-phone" name="phone" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="quick-party-state">State</Label>
+            <Select name="state" defaultValue={tenantState ?? undefined}>
+              <SelectTrigger id="quick-party-state" className="w-full">
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent>
+                {INDIAN_STATES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state?.errors?.state && (
+              <p className="text-sm text-destructive">{state.errors.state[0]}</p>
+            )}
+            <p className="text-muted-foreground text-xs">
+              Drives CGST+SGST vs IGST on this invoice — defaults to your own state.
+            </p>
           </div>
           <DialogFooter className="-mx-0 -mb-0 border-t-0 bg-transparent p-0 sm:justify-end">
             <Button type="submit" disabled={pending}>

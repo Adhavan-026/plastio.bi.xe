@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { PARTY_TYPES } from "@/lib/validations/party";
 import type { PartyFormState } from "@/lib/validations/party";
+import { INDIAN_STATES } from "@/lib/validations/states";
 
 type PartyFormProps = {
   action: (state: PartyFormState, formData: FormData) => Promise<PartyFormState>;
@@ -77,12 +78,19 @@ export function PartyForm({ action, defaultValues, submitLabel }: PartyFormProps
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="state">State</Label>
-          <Input
-            id="state"
-            name="state"
-            placeholder="e.g. Tamil Nadu"
-            defaultValue={defaultValues?.state ?? ""}
-          />
+          <Select name="state" defaultValue={defaultValues?.state ?? undefined}>
+            <SelectTrigger id="state" className="w-full">
+              <SelectValue placeholder="Select state" />
+            </SelectTrigger>
+            <SelectContent>
+              {INDIAN_STATES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {state?.errors?.state && <p className="text-sm text-destructive">{state.errors.state[0]}</p>}
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="gstNumber">GST number</Label>

@@ -30,7 +30,7 @@ export async function createParty(
       phone: phone || null,
       email: email || null,
       address: address || null,
-      state: state || null,
+      state,
       gstNumber: gstNumber || null,
       tenantId: context.tenantId,
     },
@@ -69,7 +69,7 @@ export async function quickCreateParty(
   });
 
   revalidatePath("/dashboard/parties");
-  return { party: { id: party.id, name: party.name } };
+  return { party: { id: party.id, name: party.name, state: party.state as string } };
 }
 
 export async function updateParty(
@@ -99,7 +99,7 @@ export async function updateParty(
       phone: phone || null,
       email: email || null,
       address: address || null,
-      state: state || null,
+      state,
       gstNumber: gstNumber || null,
     },
   });
