@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTenantContext, getTenantDb } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -44,7 +46,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end print:hidden">
+      <div className="flex justify-end gap-2 print:hidden">
+        <Button
+          render={<Link href={isPurchase ? "/dashboard/purchases" : "/dashboard/invoices"} />}
+          nativeButton={false}
+          variant="outline"
+        >
+          Finish
+        </Button>
         <PrintButton />
       </div>
 
