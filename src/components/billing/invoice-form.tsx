@@ -26,6 +26,8 @@ import { QuickAddProductDialog } from "@/components/billing/quick-add-product-di
 import { UNITS, VEHICLE_TYPES } from "@/lib/validations/product";
 import { PAYMENT_MODES } from "@/lib/validations/invoice";
 import type { SalesInvoiceFormState } from "@/lib/validations/invoice";
+import { updatePartyState } from "@/app/actions/parties";
+import { INDIAN_STATES } from "@/lib/validations/states";
 
 type ProductOption = {
   id: string;
@@ -190,6 +192,7 @@ export function InvoiceForm({
   const [vehicleType, setVehicleType] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMode, setPaymentMode] = useState<string>("CASH");
+  const [fixingState, setFixingState] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState(false);
 
   const storageKey = `invoice-draft-${draftKey}`;
@@ -362,6 +365,15 @@ export function InvoiceForm({
     ]);
   }
 
+  async function fixPartyState(partyId: string, newState: string) {
+    setFixingState(true);
+    const result = await updatePartyState(partyId, newState);
+    if (result.ok) {
+      setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, state: newState } : p)));
+    }
+    setFixingState(false);
+  }
+
   function stepQuantity(key: string, delta: number) {
     setRows((prev) =>
       prev.map((row) => {
@@ -439,6 +451,29 @@ export function InvoiceForm({
                 </div>
                 {state?.errors?.partyId && (
                   <p className="text-destructive text-sm">{state.errors.partyId[0]}</p>
+                )}
+                {selectedParty && !selectedParty.state && (
+                  <div className="border-warning/40 bg-warning/10 flex flex-col gap-2 rounded-lg border px-3 py-2">
+                    <p className="text-xs">
+                      This {partyLabel.toLowerCase()} has no state on file — GST defaults to
+                      CGST+SGST until you set one.
+                    </p>
+                    <Select
+                      disabled={fixingState}
+                      onValueChange={(v) => fixPartyState(selectedParty.id, v as string)}
+                    >
+                      <SelectTrigger className="h-8 w-full text-xs">
+                        <SelectValue placeholder="Set state now" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INDIAN_STATES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
               <div className="flex flex-col gap-2">

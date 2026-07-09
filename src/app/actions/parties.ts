@@ -1,5 +1,6 @@
 "use server";
 
+import * as z from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
@@ -9,6 +10,36 @@ import {
   type PartyFormState,
   type QuickPartyState,
 } from "@/lib/validations/party";
+import { INDIAN_STATES } from "@/lib/validations/states";
+
+/**
+ * Fixes up a party's state in place from the billing screen, for parties
+ * created before state was required (they'd otherwise silently default to
+ * intra-state CGST+SGST with no indication why). Doesn't redirect, same
+ * reasoning as quickCreateParty.
+ */
+export async function updatePartyState(
+  partyId: string,
+  state: string
+): Promise<{ ok: boolean; message?: string }> {
+  const context = await getTenantContext();
+  requireRole(context, ["OWNER", "MANAGER", "CASHIER"]);
+
+  const result = z.enum(INDIAN_STATES).safeParse(state);
+  if (!result.success) {
+    return { ok: false, message: "Select a valid state." };
+  }
+
+  const db = await getTenantDb();
+  const existing = await db.party.findUnique({ where: { id: partyId } });
+  if (!existing) {
+    return { ok: false, message: "Party not found." };
+  }
+
+  await db.party.update({ where: { id: partyId }, data: { state: result.data } });
+  revalidatePath("/dashboard/parties");
+  return { ok: true };
+}
 
 export async function createParty(
   _state: PartyFormState,
