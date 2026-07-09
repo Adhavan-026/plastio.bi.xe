@@ -76,6 +76,7 @@ export default async function NewSalesInvoicePage() {
         submitLabel="Create invoice"
         batchesByProduct={batchesByProduct}
         showTyreFields={tenant.businessType === "TYRE"}
+        isTyreTenant={tenant.businessType === "TYRE"}
         draftKey="sales"
         tenantState={tenant.state}
       />

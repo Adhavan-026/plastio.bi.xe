@@ -10,7 +10,7 @@ export default async function NewPurchaseInvoicePage() {
   const db = await getTenantDb();
 
   const [tenant, products, parties] = await Promise.all([
-    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { state: true } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { state: true, businessType: true } }),
     db.product.findMany({
       where: { isActive: true },
       select: {
@@ -58,6 +58,7 @@ export default async function NewPurchaseInvoicePage() {
         submitLabel="Create purchase invoice"
         draftKey="purchase"
         tenantState={tenant.state}
+        isTyreTenant={tenant.businessType === "TYRE"}
       />
     </div>
   );

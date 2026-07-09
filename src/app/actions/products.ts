@@ -7,9 +7,56 @@ import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
 import {
   ProductFormSchema,
   ProductLineSchema,
+  QuickProductSchema,
   type ProductFormState,
   type ProductBulkFormState,
+  type QuickProductState,
 } from "@/lib/validations/product";
+
+/**
+ * Creates a minimal product without redirecting, for the billing screen's
+ * quick-add-item dialog — losing an in-progress invoice/purchase to a
+ * navigation would defeat the point. New stock starts at 0; a purchase
+ * that includes this product will increment it the normal way once saved.
+ */
+export async function quickCreateProduct(
+  _state: QuickProductState,
+  formData: FormData
+): Promise<QuickProductState> {
+  const context = await getTenantContext();
+  requireRole(context, ["OWNER", "MANAGER", "CASHIER"]);
+
+  const validatedFields = QuickProductSchema.safeParse(Object.fromEntries(formData));
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors };
+  }
+
+  const db = await getTenantDb();
+  const { category, ...rest } = validatedFields.data;
+  const product = await db.product.create({
+    data: {
+      ...rest,
+      category: category || null,
+      stockQty: 0,
+      lowStockAlert: 0,
+      tenantId: context.tenantId,
+    },
+  });
+
+  revalidatePath("/dashboard/products");
+  return {
+    product: {
+      id: product.id,
+      name: product.name,
+      unit: product.unit,
+      gstRate: product.gstRate.toString(),
+      sellingPrice: product.sellingPrice.toString(),
+      purchasePrice: product.purchasePrice.toString(),
+      stockQty: product.stockQty.toString(),
+      category: product.category,
+    },
+  };
+}
 
 export async function createProducts(
   _state: ProductBulkFormState,

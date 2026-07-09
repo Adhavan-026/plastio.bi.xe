@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { EntityCombobox, type ComboboxOption } from "@/components/billing/entity-combobox";
 import { QuickAddPartyDialog } from "@/components/billing/quick-add-party-dialog";
+import { QuickAddProductDialog } from "@/components/billing/quick-add-product-dialog";
 import { UNITS, VEHICLE_TYPES } from "@/lib/validations/product";
 import { PAYMENT_MODES } from "@/lib/validations/invoice";
 import type { SalesInvoiceFormState } from "@/lib/validations/invoice";
@@ -146,13 +147,14 @@ function isInterState(tenantState: string | null, partyState: string | null | un
 
 export function InvoiceForm({
   action,
-  products,
+  products: initialProducts,
   parties: initialParties,
   partyLabel,
   rateField,
   submitLabel,
   batchesByProduct,
   showTyreFields,
+  isTyreTenant,
   draftKey,
   tenantState,
 }: {
@@ -164,8 +166,12 @@ export function InvoiceForm({
   submitLabel: string;
   /** Agro module: batches (soonest-expiry first) available per productId. */
   batchesByProduct?: Record<string, BatchOption[]>;
-  /** Tyre module: show vehicle info, exchange value, and per-line serial/warranty. */
+  /** Tyre module: show vehicle info, exchange value, and bigger item-entry fields (sales screen only). */
   showTyreFields?: boolean;
+  /** Whether the tenant is a Tyre shop, independent of showTyreFields — a
+   * product's vehicle-fit categorization applies on the purchase screen too,
+   * which never sets showTyreFields. Falls back to showTyreFields if omitted. */
+  isTyreTenant?: boolean;
   /** Distinguishes the localStorage draft between the sales and purchase screens. */
   draftKey: string;
   /** The shop's own state, for the live CGST/SGST vs IGST preview. */
@@ -173,6 +179,7 @@ export function InvoiceForm({
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [parties, setParties] = useState(initialParties);
+  const [products, setProducts] = useState(initialProducts);
   const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [rowHistory, setRowHistory] = useState<Row[][]>([]);
@@ -339,6 +346,22 @@ export function InvoiceForm({
     setQuickAddSelection(null);
   }
 
+  function onQuickProductCreated(product: ProductOption) {
+    setProducts((prev) => [...prev, product]);
+    pushRowHistory();
+    setRows((prev) => [
+      ...prev,
+      {
+        ...emptyRow(),
+        productId: product.id,
+        description: product.name,
+        unit: product.unit,
+        rate: rateField === "sellingPrice" ? product.sellingPrice : product.purchasePrice,
+        gstRate: product.gstRate,
+      },
+    ]);
+  }
+
   function stepQuantity(key: string, delta: number) {
     setRows((prev) =>
       prev.map((row) => {
@@ -500,8 +523,8 @@ export function InvoiceForm({
                 Undo
               </Button>
             </div>
-            <div className="p-5 pb-0">
-              <div className="border-input bg-secondary/30 focus-within:border-primary flex items-center gap-2 rounded-lg border border-dashed px-3 py-1">
+            <div className="flex items-center gap-2 p-5 pb-0">
+              <div className="border-input bg-secondary/30 focus-within:border-primary flex flex-1 items-center gap-2 rounded-lg border border-dashed px-3 py-1">
                 <Search className="text-muted-foreground size-4 shrink-0" />
                 <div className="flex-1">
                   <EntityCombobox
@@ -514,6 +537,10 @@ export function InvoiceForm({
                   />
                 </div>
               </div>
+              <QuickAddProductDialog
+                showTyreFields={isTyreTenant ?? showTyreFields}
+                onCreated={onQuickProductCreated}
+              />
             </div>
 
             <div className="mt-3">

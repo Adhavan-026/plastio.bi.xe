@@ -71,3 +71,38 @@ export type ProductBulkFormState =
       successCount?: number;
     }
   | undefined;
+
+/**
+ * Minimal fields for creating a brand-new product inline from the billing
+ * screen's item search, without leaving the invoice/purchase in progress.
+ * Both prices are collected (not just the one relevant to this screen) so
+ * the product is immediately usable from the other billing screen too.
+ */
+export const QuickProductSchema = z.object({
+  name: z.string().min(1, { error: "Product name is required." }).trim(),
+  unit: z.enum(UNITS),
+  gstRate: z.coerce
+    .number({ error: "GST % must be a number." })
+    .min(0, { error: "GST % can't be negative." })
+    .max(100, { error: "GST % can't exceed 100." }),
+  purchasePrice: z.coerce.number().min(0, { error: "Purchase price can't be negative." }),
+  sellingPrice: z.coerce.number().min(0, { error: "Selling price can't be negative." }),
+  category: z.string().trim().optional().or(z.literal("")),
+});
+
+export type QuickProductState =
+  | {
+      errors?: Partial<Record<keyof z.infer<typeof QuickProductSchema>, string[]>>;
+      message?: string;
+      product?: {
+        id: string;
+        name: string;
+        unit: string;
+        gstRate: string;
+        sellingPrice: string;
+        purchasePrice: string;
+        stockQty: string;
+        category: string | null;
+      };
+    }
+  | undefined;
