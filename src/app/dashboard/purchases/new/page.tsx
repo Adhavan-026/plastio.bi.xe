@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { createPurchaseInvoice } from "@/app/actions/invoices";
 import { InvoiceForm } from "@/components/billing/invoice-form";
+import { Button } from "@/components/ui/button";
 
 export default async function NewPurchaseInvoicePage() {
   const { tenantId } = await getTenantContext();
@@ -32,7 +34,12 @@ export default async function NewPurchaseInvoicePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">New purchase invoice</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">New purchase invoice</h1>
+        <Button render={<Link href="/dashboard/purchases" />} nativeButton={false} variant="outline">
+          Finish
+        </Button>
+      </div>
       <InvoiceForm
         action={createPurchaseInvoice}
         products={products.map((p) => ({
