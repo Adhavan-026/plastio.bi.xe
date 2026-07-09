@@ -35,7 +35,7 @@ export function SettingsForm({ defaultValues, showLicenseNumber }: Props) {
         {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="gstNumber">GST number</Label>
           <Input id="gstNumber" name="gstNumber" defaultValue={defaultValues.gstNumber ?? ""} />
@@ -55,7 +55,7 @@ export function SettingsForm({ defaultValues, showLicenseNumber }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="phone">Phone</Label>
           <Input id="phone" name="phone" defaultValue={defaultValues.phone ?? ""} />

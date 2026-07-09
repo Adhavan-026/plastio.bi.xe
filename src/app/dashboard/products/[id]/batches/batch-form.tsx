@@ -18,7 +18,7 @@ export function BatchForm({ productId }: { productId: string }) {
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
       <input type="hidden" name="productId" value={productId} />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="batchNumber">Batch number</Label>
           <Input id="batchNumber" name="batchNumber" required />
@@ -35,7 +35,7 @@ export function BatchForm({ productId }: { productId: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="mfgDate">Manufacturing date</Label>
           <Input id="mfgDate" name="mfgDate" type="date" />

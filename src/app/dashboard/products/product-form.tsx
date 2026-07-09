@@ -46,7 +46,7 @@ export function ProductForm({ action, defaultValues, submitLabel, showTyreFields
         {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="hsnCode">HSN code</Label>
           <Input id="hsnCode" name="hsnCode" defaultValue={defaultValues?.hsnCode ?? ""} />
@@ -73,7 +73,7 @@ export function ProductForm({ action, defaultValues, submitLabel, showTyreFields
         <Input id="category" name="category" defaultValue={defaultValues?.category ?? ""} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-2">
           <Label htmlFor="gstRate">GST %</Label>
           <Input
@@ -115,7 +115,7 @@ export function ProductForm({ action, defaultValues, submitLabel, showTyreFields
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="stockQty">Current stock</Label>
           <Input
@@ -141,7 +141,7 @@ export function ProductForm({ action, defaultValues, submitLabel, showTyreFields
       </div>
 
       {showTyreFields && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label htmlFor="tyreBrand">Tyre brand</Label>
             <Input id="tyreBrand" name="tyreBrand" defaultValue={defaultValues?.tyreBrand ?? ""} />

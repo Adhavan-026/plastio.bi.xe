@@ -34,7 +34,7 @@ export function PartyForm({ action, defaultValues, submitLabel }: PartyFormProps
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="name">Name</Label>
           <Input id="name" name="name" defaultValue={defaultValues?.name} required />
@@ -57,7 +57,7 @@ export function PartyForm({ action, defaultValues, submitLabel }: PartyFormProps
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="phone">Phone</Label>
           <Input id="phone" name="phone" defaultValue={defaultValues?.phone ?? ""} />
@@ -74,7 +74,7 @@ export function PartyForm({ action, defaultValues, submitLabel }: PartyFormProps
         <Input id="address" name="address" defaultValue={defaultValues?.address ?? ""} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="state">State</Label>
           <Input

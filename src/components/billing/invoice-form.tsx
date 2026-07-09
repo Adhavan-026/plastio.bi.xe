@@ -275,7 +275,7 @@ export function InvoiceForm({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-2">
           <Label htmlFor="partyId">{partyLabel}</Label>
           <div className="flex items-end gap-2">
@@ -324,7 +324,7 @@ export function InvoiceForm({
       </div>
 
       {showTyreFields && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-2">
             <Label htmlFor="vehicleNumber">Vehicle number</Label>
             <Input
@@ -542,7 +542,7 @@ export function InvoiceForm({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-2">
           <Label htmlFor="amountPaid">Amount paid now</Label>
           <Input id="amountPaid" name="amountPaid" type="number" step="0.01" defaultValue="0" />
