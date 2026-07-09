@@ -31,14 +31,23 @@ import {
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 type NavGroup = { label: string; items: NavItem[] };
 
+function initials(value: string): string {
+  const parts = value.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const second = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+  return (first + second).toUpperCase() || "?";
+}
+
 export function AppSidebar({
   tenantName,
   businessType,
   role,
+  userName,
 }: {
   tenantName: string;
   businessType: "AGRO" | "TYRE" | "COMMON";
   role: string;
+  userName: string;
 }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
@@ -80,21 +89,20 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
+        <div className="flex items-center gap-2.5 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <div className="from-primary to-primary/70 text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-xs font-bold">
+            {initials(tenantName)}
+          </div>
+          <div className="flex min-w-0 flex-col leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-sm font-semibold">{tenantName}</span>
+            <span className="text-sidebar-foreground/55 truncate text-xs">{businessType}</span>
+          </div>
+        </div>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              render={<Link href="/dashboard" />}
-              isActive={pathname === "/dashboard"}
-              onClick={closeMobile}
-            >
+            <SidebarMenuButton render={<Link href="/dashboard" />} isActive={pathname === "/dashboard"} onClick={closeMobile}>
               <LayoutDashboard />
-              <div className="flex flex-col leading-tight">
-                <span className="font-semibold">{tenantName}</span>
-                <span className="text-sidebar-foreground/60 text-xs">
-                  {businessType} &middot; {role}
-                </span>
-              </div>
+              <span>Dashboard</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -137,6 +145,15 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <div className="border-sidebar-border mt-1 flex items-center gap-2.5 border-t px-2 pt-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <div className="bg-sidebar-accent text-sidebar-accent-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+            {initials(userName)}
+          </div>
+          <div className="flex min-w-0 flex-col leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-sm font-medium">{userName}</span>
+            <span className="text-sidebar-foreground/55 truncate text-xs">{role}</span>
+          </div>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
