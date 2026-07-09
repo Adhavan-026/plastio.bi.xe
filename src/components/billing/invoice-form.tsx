@@ -175,6 +175,7 @@ export function InvoiceForm({
   const [parties, setParties] = useState(initialParties);
   const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
+  const [rowHistory, setRowHistory] = useState<Row[][]>([]);
   const [quickAddSelection, setQuickAddSelection] = useState<ComboboxOption | null>(null);
   const [billDiscountPercent, setBillDiscountPercent] = useState("0");
   const [exchangeValue, setExchangeValue] = useState("0");
@@ -315,10 +316,26 @@ export function InvoiceForm({
     if (built) updateRow(key, built);
   }
 
+  function pushRowHistory() {
+    setRowHistory((prev) => [...prev.slice(-9), rows]);
+  }
+
+  function undoRows() {
+    setRowHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setRows(last);
+      return prev.slice(0, -1);
+    });
+  }
+
   function onQuickAdd(item: ComboboxOption | null) {
     if (!item) return;
     const row = buildRowFromProduct(item.id);
-    if (row) setRows((prev) => [...prev, row]);
+    if (row) {
+      pushRowHistory();
+      setRows((prev) => [...prev, row]);
+    }
     setQuickAddSelection(null);
   }
 
@@ -471,8 +488,17 @@ export function InvoiceForm({
           </div>
 
           <div className="bg-card rounded-xl border shadow-sm">
-            <div className="border-b px-5 py-3.5">
+            <div className="flex items-center justify-between border-b px-5 py-3.5">
               <h2 className="text-sm font-bold">Items</h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={undoRows}
+                disabled={rowHistory.length === 0}
+              >
+                Undo
+              </Button>
             </div>
             <div className="p-5 pb-0">
               <div className="border-input bg-secondary/30 focus-within:border-primary flex items-center gap-2 rounded-lg border border-dashed px-3 py-1">
@@ -663,7 +689,10 @@ export function InvoiceForm({
                         <TableCell>
                           <button
                             type="button"
-                            onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
+                            onClick={() => {
+                              pushRowHistory();
+                              setRows((prev) => prev.filter((r) => r.key !== row.key));
+                            }}
                             className="text-muted-foreground hover:text-destructive p-1"
                             aria-label="Remove item"
                           >
