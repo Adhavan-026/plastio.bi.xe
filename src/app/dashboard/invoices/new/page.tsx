@@ -2,15 +2,20 @@ import Link from "next/link";
 import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { createSalesInvoice } from "@/app/actions/invoices";
+import { peekNextInvoiceNumber } from "@/lib/billing/invoice-number";
 import { InvoiceForm, type BatchOption } from "@/components/billing/invoice-form";
 import { Button } from "@/components/ui/button";
 
 export default async function NewSalesInvoicePage() {
-  const { tenantId } = await getTenantContext();
+  const { tenantId, role } = await getTenantContext();
   const db = await getTenantDb();
 
-  const [tenant, products, parties] = await Promise.all([
-    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true, state: true } }),
+  const [tenant, nextNumber, products, parties] = await Promise.all([
+    prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { businessType: true, state: true, allowInvoiceEdit: true },
+    }),
+    peekNextInvoiceNumber(prisma, tenantId, "SALES", new Date()),
     db.product.findMany({
       where: { isActive: true },
       select: {
@@ -79,6 +84,11 @@ export default async function NewSalesInvoicePage() {
         isTyreTenant={tenant.businessType === "TYRE"}
         draftKey="sales"
         tenantState={tenant.state}
+        invoiceNumberField={{
+          prefix: nextNumber.prefix,
+          placeholderSeq: nextNumber.nextSeq.toString().padStart(4, "0"),
+          editable: tenant.allowInvoiceEdit && (role === "OWNER" || role === "MANAGER"),
+        }}
       />
     </div>
   );

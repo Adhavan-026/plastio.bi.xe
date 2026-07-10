@@ -6,7 +6,14 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
 import { computeInvoiceTotals, isInterStateSupply } from "@/lib/billing/gst";
-import { getNextInvoiceNumber } from "@/lib/billing/invoice-number";
+import {
+  getNextInvoiceNumber,
+  getFinancialYearKey,
+  formatInvoiceNumber,
+  splitInvoiceNumber,
+  reseedCounter,
+  INVOICE_SEQ_MAX,
+} from "@/lib/billing/invoice-number";
 import {
   InvoiceLineSchema,
   SalesInvoiceFormSchema,
@@ -17,6 +24,25 @@ import { canEditInvoice } from "@/lib/billing/invoice-edit";
 import type { Role, PartyType } from "@/generated/prisma/enums";
 
 type InvoiceKind = "SALES" | "PURCHASE";
+
+// Postgres unique-constraint violation surfaced by Prisma — the only way a
+// custom bill number can clash after passing the pre-check (a concurrent
+// save grabbed it first).
+function isUniqueConstraintError(e: unknown): boolean {
+  return typeof e === "object" && e !== null && (e as { code?: unknown }).code === "P2002";
+}
+
+/**
+ * Validates an owner-gated custom bill-number sequence typed into the form.
+ * Returns the parsed sequence, or an error state string when invalid.
+ */
+function parseCustomSequence(raw: string): number | { error: string } {
+  const seq = Number(raw);
+  if (!Number.isInteger(seq) || seq < 1 || seq > INVOICE_SEQ_MAX) {
+    return { error: `Bill number must be a whole number from 1 to ${INVOICE_SEQ_MAX}.` };
+  }
+  return seq;
+}
 
 const KIND_CONFIG: Record<
   InvoiceKind,
@@ -65,6 +91,7 @@ async function createInvoiceCore(
     vehicleNumber,
     vehicleType,
     exchangeValue,
+    invoiceSequence,
   } = validatedFields.data;
 
   let rawItems: unknown;
@@ -125,6 +152,34 @@ async function createInvoiceCore(
   }
 
   const invoiceDateObj = new Date(invoiceDate);
+
+  // Custom bill number: gated exactly like invoice editing — the owner's
+  // setting must be on and the caller must be OWNER/MANAGER. The form hides
+  // the field otherwise, so anything else arriving here is a forged request.
+  let overrideSeq: number | undefined;
+  if (invoiceSequence) {
+    if (!tenant.allowInvoiceEdit || (context.role !== "OWNER" && context.role !== "MANAGER")) {
+      return {
+        errors: {
+          invoiceSequence: ["Custom bill numbers need invoice editing enabled in Settings."],
+        },
+      };
+    }
+    const parsed = parseCustomSequence(invoiceSequence);
+    if (typeof parsed !== "number") {
+      return { errors: { invoiceSequence: [parsed.error] } };
+    }
+    const candidate = formatInvoiceNumber(kind, getFinancialYearKey(invoiceDateObj), parsed);
+    const clash = await db.invoice.findFirst({
+      where: { type: kind, invoiceNumber: candidate },
+      select: { id: true },
+    });
+    if (clash) {
+      return { errors: { invoiceSequence: [`${candidate} is already used by another bill.`] } };
+    }
+    overrideSeq = parsed;
+  }
+
   const isInterState = isInterStateSupply(tenant.state, party.state);
   const totals = computeInvoiceTotals(items, { billDiscountPercent, isInterState });
 
@@ -141,7 +196,13 @@ async function createInvoiceCore(
   const paymentStatus = amountPaid <= 0 ? "UNPAID" : amountPaid >= netTotal ? "PAID" : "PARTIAL";
 
   const invoice = await db.$transaction(async (tx) => {
-    const invoiceNumber = await getNextInvoiceNumber(tx, context.tenantId, kind, invoiceDateObj);
+    const invoiceNumber = await getNextInvoiceNumber(
+      tx,
+      context.tenantId,
+      kind,
+      invoiceDateObj,
+      overrideSeq
+    );
 
     const created = await tx.invoice.create({
       data: {
@@ -218,7 +279,18 @@ async function createInvoiceCore(
     }
 
     return created;
+  }).catch((e: unknown) => {
+    // A concurrent save can grab a custom number between the pre-check and
+    // the insert; surface it as a field error instead of a crash.
+    if (overrideSeq !== undefined && isUniqueConstraintError(e)) return null;
+    throw e;
   });
+
+  if (!invoice) {
+    return {
+      errors: { invoiceSequence: ["That bill number was just taken by another bill — try a different one."] },
+    };
+  }
 
   revalidatePath("/dashboard/invoices");
   revalidatePath("/dashboard/purchases");
@@ -242,8 +314,10 @@ export async function createPurchaseInvoice(
 /**
  * Edits an existing invoice's date/party/items in place: reverses the old
  * stock movements, recomputes GST from scratch, applies the new movements,
- * and keeps the invoice number and recorded payments untouched. Gated by
- * the tenant's owner-controlled allowInvoiceEdit setting + edit window.
+ * and keeps recorded payments untouched. The bill number's sequence can be
+ * changed too — the counter is re-seeded forward so future bills continue
+ * after it, and existing bills are never renumbered. Gated by the tenant's
+ * owner-controlled allowInvoiceEdit setting + edit window.
  */
 export async function updateInvoice(
   invoiceId: string,
@@ -278,8 +352,44 @@ export async function updateInvoice(
     return { errors: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { partyId, invoiceDate, notes, billDiscountPercent, itemsJson, vehicleNumber, vehicleType, exchangeValue } =
-    validatedFields.data;
+  const {
+    partyId,
+    invoiceDate,
+    notes,
+    billDiscountPercent,
+    itemsJson,
+    vehicleNumber,
+    vehicleType,
+    exchangeValue,
+    invoiceSequence,
+  } = validatedFields.data;
+
+  // Renumbering keeps the original TYPE/FY prefix and swaps only the
+  // sequence, so the number stays consistent with the counter it came from.
+  let newInvoiceNumber: string | undefined;
+  let reseed: { counterKey: string; seq: number } | undefined;
+  if (invoiceSequence) {
+    const parts = splitInvoiceNumber(existing.invoiceNumber);
+    if (!parts) {
+      return { errors: { invoiceSequence: ["This bill's number format can't be renumbered."] } };
+    }
+    const parsed = parseCustomSequence(invoiceSequence);
+    if (typeof parsed !== "number") {
+      return { errors: { invoiceSequence: [parsed.error] } };
+    }
+    const candidate = `${parts.prefix}${parsed.toString().padStart(4, "0")}`;
+    if (candidate !== existing.invoiceNumber) {
+      const clash = await db.invoice.findFirst({
+        where: { type: existing.type, invoiceNumber: candidate, NOT: { id: invoiceId } },
+        select: { id: true },
+      });
+      if (clash) {
+        return { errors: { invoiceSequence: [`${candidate} is already used by another bill.`] } };
+      }
+      newInvoiceNumber = candidate;
+      reseed = { counterKey: parts.counterKey, seq: parsed };
+    }
+  }
 
   let rawItems: unknown;
   try {
@@ -349,7 +459,7 @@ export async function updateInvoice(
   }
   const paymentStatus = amountPaid <= 0 ? "UNPAID" : amountPaid >= netTotal ? "PAID" : "PARTIAL";
 
-  await db.$transaction(async (tx) => {
+  const txResult = await db.$transaction(async (tx) => {
     // Reverse the old stock movements before applying the new ones.
     for (const item of existing.items) {
       if (item.productId) {
@@ -372,12 +482,13 @@ export async function updateInvoice(
 
     await tx.invoiceItem.deleteMany({ where: { invoiceId } });
 
-    // Note: the invoice number keeps its original financial-year prefix even
-    // if the new date crosses an FY boundary — renumbering would break the
-    // sequential-numbering audit trail.
+    // Note: the invoice number keeps its original TYPE/FY prefix even if the
+    // new date crosses an FY boundary — only the sequence can be changed,
+    // and only through the explicit bill-number field.
     await tx.invoice.update({
       where: { id: invoiceId },
       data: {
+        ...(newInvoiceNumber ? { invoiceNumber: newInvoiceNumber } : {}),
         invoiceDate: invoiceDateObj,
         partyId,
         subtotal: totals.subtotal,
@@ -432,7 +543,23 @@ export async function updateInvoice(
         });
       }
     }
+
+    // Re-seed the counter so future bills continue after the new number.
+    if (reseed) {
+      await reseedCounter(tx, context.tenantId, reseed.counterKey, reseed.seq);
+    }
+  }).catch((e: unknown) => {
+    // A concurrent save can grab the new number between the pre-check and
+    // the update; surface it as a field error instead of a crash.
+    if (newInvoiceNumber && isUniqueConstraintError(e)) return "clash" as const;
+    throw e;
   });
+
+  if (txResult === "clash") {
+    return {
+      errors: { invoiceSequence: ["That bill number was just taken by another bill — try a different one."] },
+    };
+  }
 
   revalidatePath("/dashboard/invoices");
   revalidatePath("/dashboard/purchases");

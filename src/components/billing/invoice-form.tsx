@@ -159,6 +159,7 @@ export function InvoiceForm({
   isTyreTenant,
   draftKey,
   tenantState,
+  invoiceNumberField,
   initialInvoice,
 }: {
   action: (state: SalesInvoiceFormState, formData: FormData) => Promise<SalesInvoiceFormState>;
@@ -179,6 +180,18 @@ export function InvoiceForm({
   draftKey: string;
   /** The shop's own state, for the live CGST/SGST vs IGST preview. */
   tenantState: string | null;
+  /** Bill-number field. The placeholder previews the next auto number; when
+   * the owner has enabled invoice editing (owners/managers), the sequence
+   * becomes editable and future bills continue after a custom number. */
+  invoiceNumberField?: {
+    /** e.g. "SALES/2025-26/" — the fixed part shown before the sequence. */
+    prefix: string;
+    /** Next auto sequence (padded), shown as the placeholder. */
+    placeholderSeq: string;
+    /** Pre-filled sequence when editing an existing invoice. */
+    defaultSeq?: string;
+    editable: boolean;
+  };
   /** Edit mode: pre-fills the form from an existing invoice, hides payment
    * capture (payments live separately), and disables draft autosave. Row
    * keys must be deterministic (built server-side) — SSR renders this too. */
@@ -498,6 +511,36 @@ export function InvoiceForm({
                   </div>
                 )}
               </div>
+              {invoiceNumberField && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="invoiceSequence">Bill number</Label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground shrink-0 text-sm">
+                      {invoiceNumberField.prefix}
+                    </span>
+                    <Input
+                      id="invoiceSequence"
+                      name="invoiceSequence"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      placeholder={invoiceNumberField.placeholderSeq}
+                      defaultValue={invoiceNumberField.defaultSeq ?? ""}
+                      disabled={!invoiceNumberField.editable}
+                    />
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    {!invoiceNumberField.editable
+                      ? "Numbered automatically. Enable invoice editing in Settings to set your own."
+                      : editMode
+                        ? "Only this bill is renumbered — new bills continue after the highest number."
+                        : "Leave blank to auto-number. New bills continue after a custom number."}
+                  </p>
+                  {state?.errors?.invoiceSequence && (
+                    <p className="text-destructive text-sm">{state.errors.invoiceSequence[0]}</p>
+                  )}
+                </div>
+              )}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="invoiceDate">Invoice date</Label>
                 <Input

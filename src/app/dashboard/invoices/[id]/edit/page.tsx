@@ -4,6 +4,7 @@ import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { updateInvoice } from "@/app/actions/invoices";
 import { canEditInvoice } from "@/lib/billing/invoice-edit";
+import { splitInvoiceNumber } from "@/lib/billing/invoice-number";
 import { InvoiceForm, type BatchOption, type Row } from "@/components/billing/invoice-form";
 import { Button } from "@/components/ui/button";
 
@@ -78,6 +79,11 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
     }
   }
 
+  // Numbers not in the app-generated TYPE/FY/NNNN shape can't be renumbered —
+  // the field is simply not shown for them.
+  const numberParts = splitInvoiceNumber(invoice.invoiceNumber);
+  const paddedSeq = numberParts ? numberParts.seq.toString().padStart(4, "0") : null;
+
   // Deterministic keys — this renders on the server too, so no randomUUID here.
   const rows: Row[] = invoice.items.map((item, i) => ({
     key: `edit-${i}`,
@@ -127,6 +133,16 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
         isTyreTenant={tenant.businessType === "TYRE"}
         draftKey={`edit-${invoice.id}`}
         tenantState={tenant.state}
+        invoiceNumberField={
+          numberParts && paddedSeq
+            ? {
+                prefix: numberParts.prefix,
+                placeholderSeq: paddedSeq,
+                defaultSeq: paddedSeq,
+                editable: true,
+              }
+            : undefined
+        }
         initialInvoice={{
           partyId: invoice.partyId,
           invoiceDate: invoice.invoiceDate.toISOString().slice(0, 10),

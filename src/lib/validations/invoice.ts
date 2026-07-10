@@ -21,6 +21,14 @@ export const InvoiceLineSchema = z.object({
 export const SalesInvoiceFormSchema = z.object({
   partyId: z.string().min(1, { error: "Select a customer." }),
   invoiceDate: z.string().min(1, { error: "Invoice date is required." }),
+  // Custom bill number (sequence part only, e.g. "42" -> SALES/2025-26/0042).
+  // Blank means auto-number; honored server-side only when the owner has
+  // enabled invoice editing.
+  invoiceSequence: z
+    .string()
+    .trim()
+    .regex(/^\d{0,6}$/, { error: "Bill number must be a whole number (up to 6 digits)." })
+    .optional(),
   notes: z.string().trim().optional().or(z.literal("")),
   billDiscountPercent: z.coerce.number().min(0).max(100).default(0),
   amountPaid: z.coerce.number().min(0).default(0),
