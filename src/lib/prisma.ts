@@ -11,6 +11,13 @@ const adapter = new PrismaPg({
   // Node's default CA store doesn't trust. The connection is still
   // encrypted; this only skips chain-of-trust verification.
   ssl: { rejectUnauthorized: false },
+  // The pooler is in a distant AWS region, so a fresh TCP+TLS+auth
+  // handshake costs ~2s — far more than node-postgres' 10s default idle
+  // timeout amortizes across typical request gaps. Keep pooled connections
+  // warm much longer so most requests reuse one instead of paying that
+  // cost repeatedly.
+  keepAlive: true,
+  idleTimeoutMillis: 5 * 60 * 1000,
 });
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
