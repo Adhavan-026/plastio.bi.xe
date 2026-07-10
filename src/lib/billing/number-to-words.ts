@@ -58,11 +58,11 @@ function integerToIndianWords(n: number): string {
 }
 
 /** e.g. 4084 -> "Rupees Four Thousand Eighty-Four Only", 4084.5 -> "... and Fifty Paise Only". */
-export function amountToIndianWords(amount: number): string {
+export function amountToIndianWords(amount: number, currencyLabel = "Rupees"): string {
   const rupees = Math.floor(Math.abs(amount));
   const paise = Math.round((Math.abs(amount) - rupees) * 100);
 
-  let words = `Rupees ${integerToIndianWords(rupees)}`;
+  let words = `${currencyLabel} ${integerToIndianWords(rupees)}`;
   if (paise > 0) words += ` and ${integerToIndianWords(paise)} Paise`;
   return `${words} Only`;
 }

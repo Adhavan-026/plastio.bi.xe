@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { canEditInvoice } from "@/lib/billing/invoice-edit";
 import { amountToIndianWords } from "@/lib/billing/number-to-words";
+import { GST_STATE_CODES } from "@/lib/validations/gst-state-codes";
 import { PrintButton } from "./print-button";
 import { RecordPaymentForm } from "./record-payment-form";
 
@@ -23,11 +24,11 @@ const SHEET_VARS = {
   "--paper": "oklch(1 0 0)",
   "--ink": "oklch(0.19 0.03 258)",
   "--ink-soft": "oklch(0.5 0.025 258)",
-  "--line": "oklch(0.92 0.011 255)",
-  "--line-soft": "oklch(0.96 0.006 255)",
+  "--rule": "oklch(0.8 0.035 260)",
   "--brand": "oklch(0.55 0.215 260)",
   "--brand-ink": "oklch(0.35 0.16 260)",
-  "--brand-tint": "oklch(0.93 0.035 260)",
+  "--brand-tint": "oklch(0.94 0.03 260)",
+  "--brand-tint-2": "oklch(0.89 0.045 260)",
   "--success": "oklch(0.6 0.135 165)",
   "--success-tint": "oklch(0.94 0.05 165)",
   "--warning": "oklch(0.58 0.15 55)",
@@ -37,10 +38,22 @@ const SHEET_VARS = {
 } as React.CSSProperties;
 
 function inr(amount: number): string {
-  return `₹${Math.abs(amount).toLocaleString("en-IN", {
+  return `₹ ${Math.abs(amount).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+function num(amount: number): string {
+  return Math.abs(amount).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function stateCode(state: string | null): string | null {
+  if (!state) return null;
+  return (GST_STATE_CODES as Record<string, string>)[state] ?? null;
 }
 
 function getInitials(name: string): string {
@@ -50,9 +63,9 @@ function getInitials(name: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+function CellLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-[1.4mm] text-[7.6pt] font-bold tracking-[0.1em] text-[var(--ink-soft)] uppercase">
+    <p className="text-[7.4pt] font-semibold tracking-[0.03em] text-[var(--brand-ink)]">
       {children}
     </p>
   );
@@ -66,9 +79,9 @@ function StatusPill({ status }: { status: "PAID" | "PARTIAL" | "UNPAID" }) {
   }[status];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-[9px] py-[2px] text-[8pt] font-bold tracking-[0.04em] ${styles}`}
+      className={`inline-flex items-center gap-1 rounded-full px-[8px] py-[1px] text-[7.8pt] font-bold ${styles}`}
     >
-      <span className="h-[5px] w-[5px] rounded-full bg-current" />
+      <span className="h-[4px] w-[4px] rounded-full bg-current" />
       {status.charAt(0) + status.slice(1).toLowerCase()}
     </span>
   );
@@ -96,12 +109,38 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const balanceDue = Number(invoice.totalAmount) - Number(invoice.amountPaid);
   const isInterState = Number(invoice.igstAmount) > 0;
   const isPurchase = invoice.type === "PURCHASE";
-  const docTitle = isPurchase ? "PURCHASE BILL" : "TAX INVOICE";
-  const partyLabel = isPurchase ? "Bill from" : "Bill to";
+  const docTitle = isPurchase ? "Purchase Bill" : "Tax Invoice";
+  const partyLabel = isPurchase ? "Supplier" : "Buyer";
   const hasBatches = invoice.items.some((item) => item.batch);
   const hasTyreInfo = invoice.items.some((item) => item.tyreSerialNumber || item.warrantyMonths);
   const exchangeValue = Number(invoice.exchangeValue);
   const hasVehicle = !!(invoice.vehicleNumber || invoice.vehicleType);
+  const totalQty = invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+  const totalTax = Number(invoice.cgstAmount) + Number(invoice.sgstAmount) + Number(invoice.igstAmount);
+
+  // GST-return-style breakup: every distinct HSN/rate combination on the
+  // invoice, with its own taxable value and tax amount — a real Indian tax
+  // invoice is expected to carry this even when items above show one
+  // combined total.
+  const hsnGroups = new Map<
+    string,
+    { hsn: string; rate: number; taxable: number; cgst: number; sgst: number; igst: number }
+  >();
+  for (const item of invoice.items) {
+    const hsn = item.hsnCode ?? "—";
+    const rate = Number(item.gstRate);
+    const key = `${hsn}|${rate}`;
+    const group = hsnGroups.get(key) ?? { hsn, rate, taxable: 0, cgst: 0, sgst: 0, igst: 0 };
+    group.taxable += Number(item.taxableAmount);
+    group.cgst += Number(item.cgstAmount);
+    group.sgst += Number(item.sgstAmount);
+    group.igst += Number(item.igstAmount);
+    hsnGroups.set(key, group);
+  }
+  const hsnRows = [...hsnGroups.values()].sort((a, b) => a.hsn.localeCompare(b.hsn));
+
+  const tenantCode = stateCode(tenant.state);
+  const partyCode = stateCode(invoice.party.state);
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,348 +165,413 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div
-        className="relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[var(--paper)] text-[9.5pt] leading-[1.4] text-[var(--ink)] shadow-lg print:mx-0 print:shadow-none"
+        className="relative mx-auto flex min-h-[297mm] w-[210mm] flex-col bg-[var(--paper)] px-[10mm] py-[8mm] text-[8.6pt] leading-[1.35] text-[var(--ink)] shadow-lg print:mx-0 print:shadow-none"
         style={SHEET_VARS}
       >
-        {/* Original-for-recipient watermark, standard on Indian tax invoice copies */}
-        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-          <span className="-rotate-[26deg] text-[78pt] font-extrabold tracking-[0.06em] whitespace-nowrap text-[var(--brand)] uppercase opacity-[0.045]">
-            Original
-          </span>
+        {/* Title bar */}
+        <div className="mb-[4mm] grid grid-cols-3 items-center">
+          <div className="flex items-center gap-[2.5mm]">
+            {tenant.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- tenant-uploaded data URL, not an optimizable remote asset
+              <img
+                src={tenant.logoUrl}
+                alt=""
+                className="h-[8mm] w-[8mm] rounded-[2px] border border-[var(--rule)] bg-white object-contain"
+              />
+            ) : (
+              <span className="flex h-[8mm] w-[8mm] items-center justify-center rounded-[2px] border border-[var(--rule)] bg-[var(--brand-tint)] text-[8pt] font-bold text-[var(--brand-ink)]">
+                {getInitials(tenant.name)}
+              </span>
+            )}
+          </div>
+          <h1 className="text-center text-[15pt] font-bold text-[var(--brand-ink)]">{docTitle}</h1>
+          <p className="text-right text-[7.4pt] font-semibold tracking-[0.05em] text-[var(--ink-soft)] uppercase">
+            Original for recipient
+          </p>
         </div>
 
-        {/* Header band */}
-        <div className="relative z-10 flex items-start justify-between gap-[10mm] bg-[var(--brand)] px-[14mm] pt-[11mm] pb-[9mm] text-white">
-          <div className="flex gap-[3mm]">
-            <div className="flex h-[9mm] w-[9mm] shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-white/30 bg-white/15 text-[10pt] font-extrabold">
-              {tenant.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- tenant-uploaded data URL, not an optimizable remote asset
-                <img
-                  src={tenant.logoUrl}
-                  alt=""
-                  className="h-full w-full bg-white object-contain"
-                />
-              ) : (
-                getInitials(tenant.name)
+        {/* Seller / buyer / invoice-meta ruled grid */}
+        <div className="flex border border-[var(--rule)]">
+          <div className="flex w-[58%] flex-col border-r border-[var(--rule)]">
+            <div className="border-b border-[var(--rule)] bg-[var(--brand-tint)] px-[3mm] py-[2.6mm]">
+              <p className="text-[10pt] font-bold">{tenant.name}</p>
+              {tenant.address && <p className="text-[8.4pt]">{tenant.address}</p>}
+              <p className="text-[8.4pt]">
+                GSTIN/UIN: <span className="font-semibold">{tenant.gstNumber ?? "Unregistered"}</span>
+              </p>
+              {tenant.state && (
+                <p className="text-[8.4pt]">
+                  State Name: <span className="font-semibold">{tenant.state}</span>
+                  {tenantCode && `, Code: ${tenantCode}`}
+                </p>
+              )}
+              {tenant.licenseNumber && (
+                <p className="text-[8.4pt]">
+                  License No: <span className="font-semibold">{tenant.licenseNumber}</span>
+                </p>
               )}
             </div>
-            <div>
-              <p className="mb-[1.5mm] text-[15.5pt] font-extrabold text-balance">{tenant.name}</p>
-              {tenant.address && (
-                <p className="mt-[0.6mm] text-[8.5pt] text-white/80">{tenant.address}</p>
+            <div className="flex-1 px-[3mm] py-[2.6mm]">
+              <CellLabel>{partyLabel} (Bill to)</CellLabel>
+              <p className="mt-[0.8mm] text-[9.5pt] font-bold">{invoice.party.name}</p>
+              {invoice.party.address && (
+                <p className="text-[8.4pt]">{invoice.party.address}</p>
               )}
-              <p className="mt-[0.6mm] text-[8.5pt] text-white/80">
-                {tenant.gstNumber && (
-                  <>
-                    <span className="font-semibold text-white">GSTIN</span> {tenant.gstNumber}
-                    {tenant.phone && " · "}
-                  </>
-                )}
-                {tenant.phone}
+              <p className="text-[8.4pt]">
+                GSTIN/UIN: <span className="font-semibold">{invoice.party.gstNumber ?? "Unregistered"}</span>
               </p>
-              {tenant.licenseNumber && (
-                <p className="mt-[0.6mm] text-[8.5pt] text-white/80">
-                  <span className="font-semibold text-white">License</span> {tenant.licenseNumber}
+              {invoice.party.state && (
+                <p className="text-[8.4pt]">
+                  State Name: <span className="font-semibold">{invoice.party.state}</span>
+                  {partyCode && `, Code: ${partyCode}`}
                 </p>
               )}
             </div>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="mb-[1.5mm] text-[8.5pt] font-bold tracking-[0.14em] text-white/75 uppercase">
-              {docTitle}
-            </p>
-            <p className="font-mono text-[13.5pt] font-bold">{invoice.invoiceNumber}</p>
-            <p className="mt-[2mm] text-[8.5pt] text-white/80">
-              <span className="text-white/60">Date </span>
-              {invoice.invoiceDate.toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
-          </div>
-        </div>
-
-        {/* Bill-to / status meta strip */}
-        <div className="relative z-10 grid grid-cols-[1fr_76mm] gap-[10mm] border-b border-[var(--line)] px-[14mm] py-[8mm]">
-          <div>
-            <FieldLabel>{partyLabel}</FieldLabel>
-            <p className="mb-[1mm] text-[11.5pt] font-bold">{invoice.party.name}</p>
-            {invoice.party.address && (
-              <p className="mt-[0.5mm] text-[9pt] text-[var(--ink-soft)]">
-                {invoice.party.address}
-              </p>
-            )}
-            <p className="mt-[0.5mm] text-[9pt] text-[var(--ink-soft)]">
-              {invoice.party.phone && (
-                <>
-                  <span className="font-semibold text-[var(--ink)]">{invoice.party.phone}</span>
-                  {" · "}
-                </>
-              )}
-              GSTIN: {invoice.party.gstNumber ?? "Unregistered"}
-            </p>
-          </div>
-          <div className="overflow-hidden rounded-[4px] border border-[var(--line)]">
-            <div className="flex items-center justify-between bg-[var(--brand-tint)] px-[4mm] py-[3.5mm]">
-              <span className="text-[7.6pt] font-bold tracking-[0.08em] text-[var(--brand-ink)] uppercase">
-                Balance due
-              </span>
-              <span className="font-mono text-[13pt] font-bold text-[var(--brand-ink)]">
-                {inr(balanceDue)}
-              </span>
-            </div>
-            <div className="grid grid-cols-2">
-              <div className="p-[3mm]">
-                <FieldLabel>Status</FieldLabel>
-                <StatusPill status={invoice.paymentStatus} />
+          <div className="flex flex-1 flex-col">
+            <div className="flex border-b border-[var(--rule)]">
+              <div className="w-1/2 border-r border-[var(--rule)] px-[3mm] py-[2.6mm]">
+                <CellLabel>Invoice No.</CellLabel>
+                <p className="mt-[0.8mm] font-mono text-[9.5pt] font-bold">{invoice.invoiceNumber}</p>
               </div>
-              <div className="border-l border-[var(--line)] p-[3mm]">
-                <FieldLabel>{hasVehicle ? "Vehicle" : "Payment terms"}</FieldLabel>
-                <p className="text-[9pt] font-semibold">
+              <div className="w-1/2 px-[3mm] py-[2.6mm]">
+                <CellLabel>Dated</CellLabel>
+                <p className="mt-[0.8mm] text-[9.5pt] font-bold">
+                  {invoice.invoiceDate
+                    .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })
+                    .replace(/ /g, "-")}
+                </p>
+              </div>
+            </div>
+            <div className="flex border-b border-[var(--rule)]">
+              <div className="w-1/2 border-r border-[var(--rule)] px-[3mm] py-[2.6mm]">
+                <CellLabel>Payment Status</CellLabel>
+                <div className="mt-[1.2mm]">
+                  <StatusPill status={invoice.paymentStatus} />
+                </div>
+              </div>
+              <div className="w-1/2 px-[3mm] py-[2.6mm]">
+                <CellLabel>{hasVehicle ? "Vehicle No." : "Reverse Charge"}</CellLabel>
+                <p className="mt-[0.8mm] text-[8.6pt] font-semibold">
                   {hasVehicle
                     ? [invoice.vehicleNumber, invoice.vehicleType].filter(Boolean).join(" · ")
-                    : "Due on receipt"}
+                    : "N"}
                 </p>
               </div>
+            </div>
+            <div className="flex-1 px-[3mm] py-[2.6mm]">
+              <CellLabel>Place of Supply</CellLabel>
+              <p className="mt-[0.8mm] text-[8.6pt] font-semibold">
+                {invoice.party.state ?? tenant.state ?? "—"} ({isInterState ? "Inter-state" : "Intra-state"})
+              </p>
             </div>
           </div>
         </div>
 
         {/* Items */}
-        <div className="relative z-10 px-[14mm]">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                <th className="bg-[var(--brand-tint)] py-[3mm] pr-[2.4mm] pl-[3mm] text-left text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                  #
-                </th>
-                <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-left text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                  Item
-                </th>
-                <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                  Qty
-                </th>
-                <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                  Rate
-                </th>
-                <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                  Disc
-                </th>
-                <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                  Taxable
-                </th>
-                {isInterState ? (
-                  <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                    IGST
-                  </th>
-                ) : (
-                  <>
-                    <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                      CGST
-                    </th>
-                    <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                      SGST
-                    </th>
-                  </>
-                )}
-                <th className="bg-[var(--brand-tint)] px-[2.4mm] py-[3mm] text-right text-[7.4pt] font-bold tracking-[0.05em] text-[var(--brand-ink)] uppercase">
-                  Total
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoice.items.map((item, i) => {
-                const subParts: string[] = [];
-                if (item.hsnCode) subParts.push(`HSN ${item.hsnCode}`);
-                if (hasBatches && item.batch) {
-                  subParts.push(`Batch ${item.batch.batchNumber}`);
-                  if (item.batch.expiryDate) {
-                    subParts.push(
-                      `Exp ${item.batch.expiryDate.toLocaleDateString("en-IN", { month: "short", year: "numeric" })}`
-                    );
-                  }
+        <table className="w-full border-collapse border border-t-0 border-[var(--rule)] text-[8.2pt]">
+          <thead>
+            <tr className="bg-[var(--brand-tint-2)] text-[var(--brand-ink)]">
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-left font-bold">Sl</th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-left font-bold">
+                Description of Goods
+              </th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-left font-bold">
+                HSN/SAC
+              </th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right font-bold">
+                Quantity
+              </th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right font-bold">Rate</th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right font-bold">per</th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right font-bold">
+                Disc.%
+              </th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right font-bold">
+                Amount
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.items.map((item, i) => {
+              const subParts: string[] = [];
+              if (hasBatches && item.batch) {
+                subParts.push(`Batch ${item.batch.batchNumber}`);
+                if (item.batch.expiryDate) {
+                  subParts.push(
+                    `Exp ${item.batch.expiryDate.toLocaleDateString("en-IN", { month: "short", year: "numeric" })}`
+                  );
                 }
-                if (hasTyreInfo) {
-                  if (item.tyreSerialNumber) subParts.push(`Serial ${item.tyreSerialNumber}`);
-                  if (item.warrantyMonths) subParts.push(`${item.warrantyMonths} mo warranty`);
-                }
-                return (
-                  <tr key={item.id} className={i % 2 === 1 ? "bg-[#fafbfe]" : undefined}>
-                    <td className="border-b border-[var(--line-soft)] py-[3mm] pr-[2.4mm] pl-[3mm] align-top text-[var(--ink-soft)]">
-                      {i + 1}
-                    </td>
-                    <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] align-top">
-                      <span className="font-semibold">{item.description}</span>
-                      {subParts.length > 0 && (
-                        <span className="mt-[0.8mm] block text-[7.8pt] font-normal text-[var(--ink-soft)]">
-                          {subParts.join(" · ")}
-                        </span>
-                      )}
-                    </td>
-                    <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                      {Number(item.quantity)} {item.unit}
-                    </td>
-                    <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                      {Number(item.rate).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                      {Number(item.discountAmount).toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                      {Number(item.taxableAmount).toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    {isInterState ? (
-                      <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                        {Number(item.igstAmount).toLocaleString("en-IN", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </td>
-                    ) : (
-                      <>
-                        <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                          {Number(item.cgstAmount).toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                          {Number(item.sgstAmount).toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </td>
-                      </>
+              }
+              if (hasTyreInfo) {
+                if (item.tyreSerialNumber) subParts.push(`Serial ${item.tyreSerialNumber}`);
+                if (item.warrantyMonths) subParts.push(`${item.warrantyMonths} mo warranty`);
+              }
+              return (
+                <tr key={item.id}>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] align-top">
+                    {i + 1}
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] align-top">
+                    <span className="font-semibold">{item.description}</span>
+                    {subParts.length > 0 && (
+                      <span className="mt-[0.5mm] block text-[7.6pt] text-[var(--ink-soft)]">
+                        {subParts.join(" · ")}
+                      </span>
                     )}
-                    <td className="border-b border-[var(--line-soft)] px-[2.4mm] py-[3mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
-                      {Number(item.totalAmount).toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] align-top">
+                    {item.hsnCode ?? "—"}
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
+                    {Number(item.quantity)} {item.unit}
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
+                    {num(Number(item.rate))}
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right align-top">
+                    {item.unit}
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
+                    {Number(item.discountPercent) > 0 ? `${Number(item.discountPercent)}%` : ""}
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.8mm] text-right align-top font-mono [font-variant-numeric:tabular-nums]">
+                    {num(Number(item.taxableAmount))}
+                  </td>
+                </tr>
+              );
+            })}
 
-        {/* Amount in words / notes + totals stub */}
-        <div className="relative z-10 flex items-start gap-[10mm] px-[14mm] pt-[7mm]">
-          <div className="flex flex-1 flex-col gap-[5mm]">
-            <div className="rounded-[4px] border border-[var(--line-soft)] bg-[#fbfbfd] px-[4mm] py-[3mm]">
-              <FieldLabel>Amount in words</FieldLabel>
-              <p className="text-[9pt]">{amountToIndianWords(Number(invoice.totalAmount))}</p>
-            </div>
-            {invoice.notes && (
-              <div className="rounded-[4px] border border-[var(--line-soft)] bg-[#fbfbfd] px-[4mm] py-[3mm]">
-                <FieldLabel>Notes</FieldLabel>
-                <p className="text-[9pt]">{invoice.notes}</p>
-              </div>
-            )}
-          </div>
-          <div className="w-[76mm] shrink-0 overflow-hidden rounded-[4px] border border-[var(--line)]">
-            <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-              <span className="text-[var(--ink-soft)]">Subtotal</span>
-              <span className="font-mono [font-variant-numeric:tabular-nums]">
-                {inr(Number(invoice.subtotal))}
-              </span>
-            </div>
-            <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-              <span className="text-[var(--ink-soft)]">Discount</span>
-              <span className="font-mono [font-variant-numeric:tabular-nums]">
-                −{inr(Number(invoice.discountAmount))}
-              </span>
-            </div>
-            <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-              <span className="text-[var(--ink-soft)]">Taxable amount</span>
-              <span className="font-mono [font-variant-numeric:tabular-nums]">
-                {inr(Number(invoice.taxableAmount))}
-              </span>
-            </div>
             {isInterState ? (
-              <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-                <span className="text-[var(--ink-soft)]">IGST</span>
-                <span className="font-mono [font-variant-numeric:tabular-nums]">
-                  {inr(Number(invoice.igstAmount))}
-                </span>
-              </div>
+              <tr>
+                <td colSpan={7} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right italic text-[var(--ink-soft)]">
+                  IGST
+                </td>
+                <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                  {num(Number(invoice.igstAmount))}
+                </td>
+              </tr>
             ) : (
               <>
-                <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-                  <span className="text-[var(--ink-soft)]">CGST</span>
-                  <span className="font-mono [font-variant-numeric:tabular-nums]">
-                    {inr(Number(invoice.cgstAmount))}
-                  </span>
-                </div>
-                <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-                  <span className="text-[var(--ink-soft)]">SGST</span>
-                  <span className="font-mono [font-variant-numeric:tabular-nums]">
-                    {inr(Number(invoice.sgstAmount))}
-                  </span>
-                </div>
+                <tr>
+                  <td colSpan={7} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right italic text-[var(--ink-soft)]">
+                    CGST
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                    {num(Number(invoice.cgstAmount))}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={7} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right italic text-[var(--ink-soft)]">
+                    SGST
+                  </td>
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                    {num(Number(invoice.sgstAmount))}
+                  </td>
+                </tr>
               </>
             )}
-            <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-              <span className="text-[var(--ink-soft)]">Round off</span>
-              <span className="font-mono [font-variant-numeric:tabular-nums]">
-                {inr(Number(invoice.roundOff))}
-              </span>
-            </div>
-            {exchangeValue > 0 && (
-              <div className="flex justify-between px-[4mm] py-[2.4mm] text-[8.8pt]">
-                <span className="text-[var(--ink-soft)]">Old tyre exchange</span>
-                <span className="font-mono [font-variant-numeric:tabular-nums]">
-                  −{inr(exchangeValue)}
-                </span>
-              </div>
+            {Number(invoice.roundOff) !== 0 && (
+              <tr>
+                <td colSpan={7} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right italic text-[var(--ink-soft)]">
+                  Round Off
+                </td>
+                <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                  {num(Number(invoice.roundOff))}
+                </td>
+              </tr>
             )}
-            <div className="mt-[0.5mm] flex justify-between border-t border-[var(--line)] bg-[var(--brand-tint)] px-[4mm] py-[3.2mm]">
-              <span className="text-[9.2pt] font-bold text-[var(--brand-ink)]">Grand total</span>
-              <span className="font-mono text-[11.5pt] font-bold text-[var(--brand-ink)] [font-variant-numeric:tabular-nums]">
+            {exchangeValue > 0 && (
+              <tr>
+                <td colSpan={7} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right italic text-[var(--ink-soft)]">
+                  Less: Old Tyre Exchange
+                </td>
+                <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                  −{num(exchangeValue)}
+                </td>
+              </tr>
+            )}
+            <tr className="bg-[var(--brand-tint)]">
+              <td colSpan={3} className="border border-[var(--rule)] px-[1.6mm] py-[2mm] text-right font-bold">
+                Total
+              </td>
+              <td className="border border-[var(--rule)] px-[1.6mm] py-[2mm] text-right font-mono font-bold [font-variant-numeric:tabular-nums]">
+                {totalQty} {invoice.items[0]?.unit ?? ""}
+              </td>
+              <td className="border border-[var(--rule)]" colSpan={3} />
+              <td className="border border-[var(--rule)] px-[1.6mm] py-[2mm] text-right font-mono font-bold [font-variant-numeric:tabular-nums]">
                 {inr(Number(invoice.totalAmount))}
-              </span>
-            </div>
-            <div className="flex justify-between border-t border-[var(--line)] px-[4mm] py-[2.4mm] text-[8.8pt]">
-              <span className="text-[var(--ink-soft)]">Paid</span>
-              <span className="font-mono [font-variant-numeric:tabular-nums]">
-                {inr(Number(invoice.amountPaid))}
-              </span>
-            </div>
-            <div className="flex justify-between bg-[var(--line-soft)] px-[4mm] py-[2.4mm] text-[8.8pt] font-bold">
-              <span>Balance due</span>
-              <span
-                className="font-mono [font-variant-numeric:tabular-nums]"
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={7} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right text-[var(--ink-soft)]">
+                Amount Paid
+              </td>
+              <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                {num(Number(invoice.amountPaid))}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={7} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-bold">
+                Balance Due
+              </td>
+              <td
+                className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono font-bold [font-variant-numeric:tabular-nums]"
                 style={{ color: balanceDue > 0 ? "var(--danger)" : "var(--success)" }}
               >
-                {inr(balanceDue)}
-              </span>
-            </div>
-          </div>
-        </div>
+                {num(balanceDue)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* Terms + signature, pinned to the bottom of the page */}
-        <div className="relative z-10 mt-auto grid grid-cols-2 gap-[8mm] border-t border-[var(--line)] px-[14mm] pt-[7mm] pb-[6mm]">
+        {/* Amount chargeable */}
+        <div className="flex items-start justify-between border border-t-0 border-[var(--rule)] px-[3mm] py-[2.2mm]">
           <div>
-            <FieldLabel>Terms</FieldLabel>
-            <ul className="list-disc pl-[3.6mm] text-[8.1pt] text-[var(--ink-soft)]">
-              <li className="mb-[0.8mm]">Goods once sold are not returnable.</li>
-              <li className="mb-[0.8mm]">E. &amp; O.E. (errors and omissions excepted).</li>
-              <li>Subject to {tenant.state ?? "local"} jurisdiction.</li>
-            </ul>
-          </div>
-          <div className="flex flex-col items-end text-right">
-            <p className="mb-[12mm] text-[9pt] font-bold">For {tenant.name}</p>
-            <p className="w-[42mm] border-t border-[var(--ink-soft)] pt-[1.6mm] text-[8pt] text-[var(--ink-soft)]">
-              Authorised signatory
+            <p className="text-[7.6pt] text-[var(--ink-soft)]">Amount Chargeable (in words)</p>
+            <p className="text-[9pt] font-bold">
+              {amountToIndianWords(Number(invoice.totalAmount), "Indian Rupee")}
             </p>
           </div>
+          <p className="text-[7.6pt] text-[var(--ink-soft)] italic">E. &amp; O.E</p>
         </div>
-        <div className="relative z-10 flex justify-between border-t border-[var(--line-soft)] px-[14mm] py-[3mm] text-[7.6pt] tracking-[0.03em] text-[var(--ink-soft)]">
-          <span>Original for recipient</span>
-          <span>Computer-generated invoice</span>
+
+        {/* HSN/SAC tax summary */}
+        <table className="mt-[3mm] w-full border-collapse border border-[var(--rule)] text-[8pt]">
+          <thead>
+            <tr className="bg-[var(--brand-tint-2)] text-[var(--brand-ink)]">
+              <th rowSpan={2} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] font-bold">
+                HSN/SAC
+              </th>
+              <th rowSpan={2} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-bold">
+                Taxable Value
+              </th>
+              {isInterState ? (
+                <th colSpan={2} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] font-bold">
+                  Integrated Tax
+                </th>
+              ) : (
+                <>
+                  <th colSpan={2} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] font-bold">
+                    Central Tax
+                  </th>
+                  <th colSpan={2} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] font-bold">
+                    State Tax
+                  </th>
+                </>
+              )}
+              <th rowSpan={2} className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-bold">
+                Total Tax Amount
+              </th>
+            </tr>
+            <tr className="bg-[var(--brand-tint-2)] text-[var(--brand-ink)]">
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1mm] text-right font-bold">Rate</th>
+              <th className="border border-[var(--rule)] px-[1.6mm] py-[1mm] text-right font-bold">Amount</th>
+              {!isInterState && (
+                <>
+                  <th className="border border-[var(--rule)] px-[1.6mm] py-[1mm] text-right font-bold">Rate</th>
+                  <th className="border border-[var(--rule)] px-[1.6mm] py-[1mm] text-right font-bold">Amount</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {hsnRows.map((g) => (
+              <tr key={`${g.hsn}-${g.rate}`}>
+                <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm]">{g.hsn}</td>
+                <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                  {num(g.taxable)}
+                </td>
+                {isInterState ? (
+                  <>
+                    <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                      {g.rate}%
+                    </td>
+                    <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                      {num(g.igst)}
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                      {g.rate / 2}%
+                    </td>
+                    <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                      {num(g.cgst)}
+                    </td>
+                    <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                      {g.rate / 2}%
+                    </td>
+                    <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                      {num(g.sgst)}
+                    </td>
+                  </>
+                )}
+                <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                  {num(g.cgst + g.sgst + g.igst)}
+                </td>
+              </tr>
+            ))}
+            <tr className="bg-[var(--brand-tint)] font-bold">
+              <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm]">Total</td>
+              <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                {num(Number(invoice.taxableAmount))}
+              </td>
+              {isInterState ? (
+                <>
+                  <td className="border border-[var(--rule)]" />
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                    {num(Number(invoice.igstAmount))}
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td className="border border-[var(--rule)]" />
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                    {num(Number(invoice.cgstAmount))}
+                  </td>
+                  <td className="border border-[var(--rule)]" />
+                  <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                    {num(Number(invoice.sgstAmount))}
+                  </td>
+                </>
+              )}
+              <td className="border border-[var(--rule)] px-[1.6mm] py-[1.4mm] text-right font-mono [font-variant-numeric:tabular-nums]">
+                {num(totalTax)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p className="border border-t-0 border-[var(--rule)] px-[3mm] py-[1.8mm] text-[8pt]">
+          <span className="text-[var(--ink-soft)]">Tax Amount (in words): </span>
+          <span className="font-bold">{amountToIndianWords(totalTax, "Indian Rupee")}</span>
+        </p>
+
+        {invoice.notes && (
+          <p className="border border-t-0 border-[var(--rule)] px-[3mm] py-[1.8mm] text-[8pt]">
+            <span className="text-[var(--ink-soft)]">Notes: </span>
+            {invoice.notes}
+          </p>
+        )}
+
+        {/* Declaration + signature, pinned to the bottom of the page */}
+        <div className="mt-auto flex border border-t-0 border-[var(--rule)]">
+          <div className="w-[60%] border-r border-[var(--rule)] px-[3mm] py-[3mm]">
+            <p className="mb-[1mm] text-[7.6pt] font-semibold text-[var(--ink-soft)]">Declaration</p>
+            <p className="text-[7.6pt] text-[var(--ink-soft)]">
+              We declare that this invoice shows the actual price of the goods described and that
+              all particulars are true and correct.
+            </p>
+          </div>
+          <div className="flex flex-1 flex-col justify-between px-[3mm] py-[3mm] text-right">
+            <p className="text-[8.6pt] font-bold">for {tenant.name}</p>
+            <p className="text-[7.8pt] text-[var(--ink-soft)]">Authorised Signatory</p>
+          </div>
         </div>
+        <p className="pt-[2.5mm] text-center text-[7.6pt] text-[var(--ink-soft)]">
+          This is a Computer Generated Invoice
+        </p>
       </div>
 
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 print:hidden">
