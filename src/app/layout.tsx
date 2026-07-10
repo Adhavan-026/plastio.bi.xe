@@ -2,8 +2,24 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { FontSizeProvider } from "@/components/font-size-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
+
+// Applies a stored font-size preference before hydration so the page never
+// flashes at the default size then jumps — same reasoning as next-themes'
+// own blocking script for dark/light mode.
+const FONT_SIZE_INIT_SCRIPT = `
+(function () {
+  try {
+    var sizes = { sm: "87.5%", md: "100%", lg: "112.5%", xl: "125%" };
+    var stored = localStorage.getItem("font-size");
+    if (stored && sizes[stored]) {
+      document.documentElement.style.fontSize = sizes[stored];
+    }
+  } catch (e) {}
+})();
+`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,12 +47,17 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: FONT_SIZE_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <TooltipProvider>
-            {children}
-            <Toaster />
-          </TooltipProvider>
+          <FontSizeProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+            </TooltipProvider>
+          </FontSizeProvider>
         </ThemeProvider>
       </body>
     </html>

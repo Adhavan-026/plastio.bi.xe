@@ -1,5 +1,6 @@
 import { getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
+import { FontSizeControl } from "@/components/settings/font-size-control";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
@@ -14,6 +15,7 @@ export default async function SettingsPage() {
           Business type: {tenant.businessType} (contact support to change)
         </p>
       </div>
+      <FontSizeControl />
       <SettingsForm
         defaultValues={{
           name: tenant.name,
