@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
 import { updateTenantSettings } from "@/app/actions/settings";
+import { LogoUpload } from "@/components/settings/logo-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ type Props = {
     address: string | null;
     state: string | null;
     licenseNumber: string | null;
+    logoUrl: string | null;
     allowInvoiceEdit: boolean;
     invoiceEditWindowDays: number;
   };
@@ -45,6 +47,9 @@ export function SettingsForm({ defaultValues, showLicenseNumber, isOwner }: Prop
         <Input id="name" name="name" defaultValue={defaultValues.name} required />
         {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
       </div>
+
+      <LogoUpload defaultValue={defaultValues.logoUrl} />
+      {state?.errors?.logoUrl && <p className="text-sm text-destructive">{state.errors.logoUrl[0]}</p>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">

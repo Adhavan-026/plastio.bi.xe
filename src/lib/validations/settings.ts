@@ -7,6 +7,17 @@ export const TenantSettingsSchema = z.object({
   phone: z.string().trim().optional().or(z.literal("")),
   email: z.email({ error: "Enter a valid email." }).trim().optional().or(z.literal("")),
   address: z.string().trim().optional().or(z.literal("")),
+  // Data URL of a client-resized logo image (see LogoUpload). Capped well
+  // above what a resized-to-160px PNG/JPEG needs, to block abuse.
+  logoUrl: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || v.startsWith("data:image/"), {
+      error: "Logo must be an image.",
+    })
+    .refine((v) => v.length <= 400_000, { error: "Logo image is too large." })
+    .optional()
+    .or(z.literal("")),
   // Required (not free text) — CGST+SGST vs IGST on every invoice depends on
   // this matching a party's state exactly, so it must come from a fixed list.
   state: z.enum(INDIAN_STATES, { error: "Select the shop's state." }),

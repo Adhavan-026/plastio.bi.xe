@@ -25,6 +25,7 @@ export default async function SettingsPage() {
           address: tenant.address,
           state: tenant.state,
           licenseNumber: tenant.licenseNumber,
+          logoUrl: tenant.logoUrl,
           allowInvoiceEdit: tenant.allowInvoiceEdit,
           invoiceEditWindowDays: tenant.invoiceEditWindowDays,
         }}
