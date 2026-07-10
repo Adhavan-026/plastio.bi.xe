@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { updateTenantSettings } from "@/app/actions/settings";
 import { LogoUpload } from "@/components/settings/logo-upload";
@@ -35,6 +35,14 @@ type Props = {
 
 export function SettingsForm({ defaultValues, showLicenseNumber, isOwner }: Props) {
   const [state, formAction, pending] = useActionState(updateTenantSettings, undefined);
+  // Controlled, not defaultValue: this form re-renders with fresh
+  // defaultValues after every save (revalidatePath), and an uncontrolled
+  // Select ignores defaultValue changes post-mount — it would silently
+  // stop reflecting the saved value.
+  const [selectedState, setSelectedState] = useState(defaultValues.state ?? "");
+  const [allowInvoiceEdit, setAllowInvoiceEdit] = useState(
+    defaultValues.allowInvoiceEdit ? "true" : "false"
+  );
 
   useEffect(() => {
     if (state?.message) toast.success(state.message);
@@ -58,7 +66,8 @@ export function SettingsForm({ defaultValues, showLicenseNumber, isOwner }: Prop
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="state">State</Label>
-          <Select name="state" defaultValue={defaultValues.state ?? undefined}>
+          <input type="hidden" name="state" value={selectedState} />
+          <Select value={selectedState} onValueChange={(v) => setSelectedState(v as string)}>
             <SelectTrigger id="state" className="w-full">
               <SelectValue placeholder="Select state" />
             </SelectTrigger>
@@ -120,9 +129,10 @@ export function SettingsForm({ defaultValues, showLicenseNumber, isOwner }: Prop
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="allowInvoiceEdit">Allow invoice editing</Label>
+              <input type="hidden" name="allowInvoiceEdit" value={allowInvoiceEdit} />
               <Select
-                name="allowInvoiceEdit"
-                defaultValue={defaultValues.allowInvoiceEdit ? "true" : "false"}
+                value={allowInvoiceEdit}
+                onValueChange={(v) => setAllowInvoiceEdit(v as string)}
                 items={{ false: "Disabled", true: "Enabled" }}
               >
                 <SelectTrigger id="allowInvoiceEdit" className="w-full">
