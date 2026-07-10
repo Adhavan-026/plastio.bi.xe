@@ -31,12 +31,12 @@ export function playClickSound() {
   oscillator.frequency.value = frequency;
 
   const now = ctx.currentTime;
-  gain.gain.setValueAtTime(0.06, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+  gain.gain.setValueAtTime(0.6, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
 
   oscillator.connect(gain).connect(ctx.destination);
   oscillator.start(now);
-  oscillator.stop(now + 0.06);
+  oscillator.stop(now + 0.1);
   oscillator.onended = () => {
     oscillator.disconnect();
     gain.disconnect();
