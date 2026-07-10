@@ -21,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <SidebarProvider>
       <AppSidebar tenantName={tenant.name} businessType={tenant.businessType} role={role} userName={userName} />
       <SidebarInset className="min-w-0">
-        <header className="flex items-center justify-between gap-4 border-b p-4 print:hidden">
+        <header className="bg-card flex items-center justify-between gap-4 border-b p-4 shadow-xs print:hidden">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <SidebarTrigger />
             <div className="border-input bg-secondary/40 text-muted-foreground hidden max-w-sm flex-1 items-center gap-2 rounded-lg border px-3 py-1.5 sm:flex">

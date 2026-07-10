@@ -52,9 +52,15 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Azure-blue primary on cool paper neutrals (myBillBook-style). */
+/*
+ * Azure-blue primary on cool paper neutrals (myBillBook-style).
+ * Light mode is an elevation ladder, darkest to lightest:
+ *   border (0.865) < muted/secondary (0.915) < background (0.95) < card/sidebar (1.0, pure white)
+ * Card/sidebar stay pure white so they visibly lift off the canvas instead
+ * of blending into it.
+ */
 :root {
-  --background: oklch(0.973 0.006 255);
+  --background: oklch(0.95 0.009 258);
   --foreground: oklch(0.19 0.03 258);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.19 0.03 258);
@@ -62,19 +68,19 @@
   --popover-foreground: oklch(0.19 0.03 258);
   --primary: oklch(0.55 0.215 260);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.955 0.009 255);
+  --secondary: oklch(0.915 0.011 258);
   --secondary-foreground: oklch(0.19 0.03 258);
-  --muted: oklch(0.955 0.009 255);
-  --muted-foreground: oklch(0.5 0.025 258);
-  --accent: oklch(0.93 0.035 260);
+  --muted: oklch(0.915 0.011 258);
+  --muted-foreground: oklch(0.47 0.025 258);
+  --accent: oklch(0.91 0.04 260);
   --accent-foreground: oklch(0.33 0.14 260);
   --destructive: oklch(0.55 0.19 25);
   --success: oklch(0.6 0.135 165);
   --success-foreground: oklch(0.985 0 0);
   --warning: oklch(0.58 0.15 55);
   --warning-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.011 255);
-  --input: oklch(0.92 0.011 255);
+  --border: oklch(0.865 0.014 258);
+  --input: oklch(0.865 0.014 258);
   --ring: oklch(0.55 0.215 260);
   --chart-1: oklch(0.55 0.215 260);
   --chart-2: oklch(0.7 0.135 220);
@@ -86,9 +92,9 @@
   --sidebar-foreground: oklch(0.19 0.03 258);
   --sidebar-primary: oklch(0.55 0.215 260);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.93 0.035 260);
+  --sidebar-accent: oklch(0.91 0.04 260);
   --sidebar-accent-foreground: oklch(0.33 0.14 260);
-  --sidebar-border: oklch(0.92 0.011 255);
+  --sidebar-border: oklch(0.865 0.014 258);
   --sidebar-ring: oklch(0.55 0.215 260);
 }
 
