@@ -64,13 +64,11 @@ function buildNavItems(businessType: BusinessType): NavItem[] {
 export function AppTopNav({
   tenantName,
   businessType,
-  role,
   userName,
   dueCount,
 }: {
   tenantName: string;
   businessType: BusinessType;
-  role: string;
   userName: string;
   dueCount: number;
 }) {
@@ -130,18 +128,6 @@ export function AppTopNav({
         </SheetContent>
       </Sheet>
 
-      <Link href="/dashboard" className="flex shrink-0 items-center gap-2.5">
-        <div className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold">
-          {initials(tenantName)}
-        </div>
-        <div className="hidden min-w-0 flex-col leading-tight sm:flex">
-          <span className="truncate text-sm font-bold">{tenantName}</span>
-          <span className="text-muted-foreground truncate text-xs">
-            {BUSINESS_LABEL[businessType]}
-          </span>
-        </div>
-      </Link>
-
       <nav className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex">
         {items.map((item) => (
           <Link
@@ -186,7 +172,7 @@ export function AppTopNav({
           </div>
           <div className="hidden min-w-0 flex-col leading-tight lg:flex">
             <span className="max-w-24 truncate text-xs font-semibold">{userName}</span>
-            <span className="text-muted-foreground truncate text-[10px]">{role}</span>
+            <span className="text-muted-foreground max-w-24 truncate text-[10px]">{tenantName}</span>
           </div>
         </div>
         <form action={logout}>

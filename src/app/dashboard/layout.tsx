@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { AppTopNav } from "@/components/dashboard/app-topnav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { tenantId, role } = await getTenantContext();
+  const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
   const [tenant, session, dueCount] = await Promise.all([
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } }),
@@ -18,7 +18,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <AppTopNav
         tenantName={tenant.name}
         businessType={tenant.businessType}
-        role={role}
         userName={userName}
         dueCount={dueCount}
       />
