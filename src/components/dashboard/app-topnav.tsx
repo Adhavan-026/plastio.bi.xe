@@ -198,7 +198,7 @@ export function AppTopNav({
         {highlight && (
           <span
             aria-hidden
-            className="bg-card absolute top-1 left-0 h-[calc(100%-8px)] rounded-full shadow-sm transition-[transform,width] duration-300 ease-out"
+            className="bg-card absolute inset-y-1 left-0 rounded-full shadow-sm transition-[transform,width] duration-300 ease-out"
             style={{ width: highlight.width, transform: `translateX(${highlight.left}px)` }}
           />
         )}
