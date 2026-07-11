@@ -1,5 +1,6 @@
 import { getTenantDb } from "@/lib/tenant-db";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { StockValueChart } from "@/components/reports/stock-value-chart";
 import {
   Table,
   TableBody,
@@ -58,6 +59,8 @@ export default async function StockReportPage() {
           ]}
         />
       </div>
+
+      <StockValueChart rows={rows} />
 
       <Table>
         <TableHeader>

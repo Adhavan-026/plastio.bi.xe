@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { SalesTrendChart } from "@/components/reports/sales-trend-chart";
 import {
   Table,
   TableBody,
@@ -82,6 +83,8 @@ export default async function SalesReportPage({
       </div>
 
       <DateRangeForm from={fromStr} to={toStr} />
+
+      <SalesTrendChart rows={rows} />
 
       <Table>
         <TableHeader>

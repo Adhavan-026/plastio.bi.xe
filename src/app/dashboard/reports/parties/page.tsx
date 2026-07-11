@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { TopPartiesChart } from "@/components/reports/top-parties-chart";
 import {
   Table,
   TableBody,
@@ -70,6 +71,8 @@ export default async function PartiesReportPage({
       </div>
 
       <DateRangeForm from={fromStr} to={toStr} />
+
+      <TopPartiesChart rows={rows} />
 
       <Table>
         <TableHeader>

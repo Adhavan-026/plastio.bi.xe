@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { ProfitLossChart } from "@/components/reports/profit-loss-chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -95,6 +96,8 @@ export default async function ProfitLossReportPage({
           <CardContent />
         </Card>
       </div>
+
+      <ProfitLossChart rows={rows} />
 
       <div className="flex items-center justify-end">
         <ExportCsvButton

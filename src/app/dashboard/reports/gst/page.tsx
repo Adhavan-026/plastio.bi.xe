@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { GstRateChart } from "@/components/reports/gst-rate-chart";
 import {
   Table,
   TableBody,
@@ -79,6 +80,8 @@ export default async function GstReportPage({
       </div>
 
       <DateRangeForm from={fromStr} to={toStr} />
+
+      <GstRateChart rows={rateRows} />
 
       <div>
         <div className="mb-2 flex items-center justify-between">
