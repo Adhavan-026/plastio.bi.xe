@@ -1,22 +1,67 @@
+import { Receipt, ReceiptText, PackageSearch, ChartNoAxesCombined, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { LoginForm } from "./login-form";
+
+const FEATURES = [
+  { icon: ReceiptText, text: "GST-compliant invoices in seconds" },
+  { icon: PackageSearch, text: "Real-time stock & low-stock alerts" },
+  { icon: ChartNoAxesCombined, text: "Built-in reports: sales, GST, P&L" },
+  { icon: ShieldCheck, text: "Agro batch tracking & tyre warranty tools" },
+];
 
 export default function LoginPage() {
   return (
-    <div className="relative flex flex-1 items-center justify-center p-6">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
+    <div className="flex min-h-svh">
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-linear-to-br from-[#0B3B2E] via-[#0F5D3E] to-[#10B77F] p-10 text-white lg:flex">
+        <div className="absolute top-1/4 -left-24 size-72 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -right-16 bottom-0 size-80 rounded-full bg-white/10 blur-3xl" />
+
+        <div className="relative flex items-center gap-2.5">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+            <Receipt className="size-4.5" />
+          </span>
+          <span className="text-lg font-bold tracking-tight">Plastio.xe</span>
+        </div>
+
+        <div className="relative flex flex-col gap-8">
+          <div className="flex flex-col gap-3">
+            <h1 className="text-3xl leading-tight font-bold text-balance">
+              Billing built for how Indian shops actually work.
+            </h1>
+            <p className="max-w-sm text-sm text-white/80">
+              GST-ready invoices, inventory, and reports for agro and tyre retailers — all in one
+              place.
+            </p>
+          </div>
+
+          <ul className="flex flex-col gap-3">
+            {FEATURES.map((feature) => (
+              <li key={feature.text} className="flex items-center gap-3 text-sm">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/15">
+                  <feature.icon className="size-3.5" />
+                </span>
+                {feature.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative text-xs text-white/60">
+          &copy; {new Date().getFullYear()} Plastio.xe. Built for Indian retail.
+        </p>
       </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Log in</CardTitle>
-          <CardDescription>Sign in to your shop&apos;s billing account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LoginForm />
-        </CardContent>
-      </Card>
+
+      <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Log in</CardTitle>
+            <CardDescription>Sign in to your shop&apos;s billing account.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LoginForm />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
