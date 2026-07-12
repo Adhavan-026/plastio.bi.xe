@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { BackButton } from "@/components/dashboard/back-button";
 import { BatchForm } from "./batch-form";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -40,6 +41,7 @@ export default async function ProductBatchesPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-col gap-8">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-semibold">Batches — {product.name}</h1>
         <p className="text-muted-foreground text-sm">

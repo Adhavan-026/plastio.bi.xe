@@ -12,6 +12,7 @@ import { getInvoiceStatusLabel } from "@/lib/billing/invoice-status";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { ReceivablesCard } from "@/components/dashboard/receivables-card";
 import { RecentInvoicesList } from "@/components/dashboard/recent-invoices-list";
+import { BackButton } from "@/components/dashboard/back-button";
 
 const TOP_ITEMS_DAYS = 30;
 const RECENT_INVOICES_COUNT = 5;
@@ -216,6 +217,7 @@ export default async function DashboardPage({
 
   return (
     <div className="flex flex-col gap-5">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground text-sm">

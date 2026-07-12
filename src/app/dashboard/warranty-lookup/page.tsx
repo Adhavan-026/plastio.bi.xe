@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { getWarrantyExpiry, isWarrantyValid } from "@/lib/billing/warranty";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ export default async function WarrantyLookupPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-semibold">Warranty lookup</h1>
         <p className="text-muted-foreground text-sm">

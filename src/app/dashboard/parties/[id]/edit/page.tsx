@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTenantDb } from "@/lib/tenant-db";
 import { updateParty } from "@/app/actions/parties";
+import { BackButton } from "@/components/dashboard/back-button";
 import { PartyForm } from "../../party-form";
 
 export default async function EditPartyPage({ params }: { params: Promise<{ id: string }> }) {
@@ -12,6 +13,7 @@ export default async function EditPartyPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <h1 className="text-2xl font-semibold">Edit party</h1>
       <PartyForm
         action={updateParty.bind(null, party.id)}

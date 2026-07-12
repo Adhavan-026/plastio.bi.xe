@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { isLowStock } from "@/lib/billing/low-stock";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -22,6 +23,7 @@ export default async function LowStockPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-semibold">Low stock</h1>
         <p className="text-muted-foreground text-sm">

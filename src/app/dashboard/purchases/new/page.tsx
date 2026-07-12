@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createPurchaseInvoice } from "@/app/actions/invoices";
 import { peekNextInvoiceNumber } from "@/lib/billing/invoice-number";
 import { InvoiceForm } from "@/components/billing/invoice-form";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 
 export default async function NewPurchaseInvoicePage() {
@@ -39,6 +40,7 @@ export default async function NewPurchaseInvoicePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">New purchase invoice</h1>
         <Button render={<Link href="/dashboard/purchases" />} nativeButton={false} variant="outline">

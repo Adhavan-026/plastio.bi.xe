@@ -1,5 +1,6 @@
 import { getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
+import { BackButton } from "@/components/dashboard/back-button";
 import { ProductBulkForm } from "../product-bulk-form";
 
 export default async function NewProductPage() {
@@ -11,6 +12,7 @@ export default async function NewProductPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <h1 className="text-2xl font-semibold">Add products</h1>
       <ProductBulkForm showTyreFields={tenant.businessType === "TYRE"} />
     </div>

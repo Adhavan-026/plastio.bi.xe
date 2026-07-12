@@ -6,6 +6,7 @@ import { updateInvoice } from "@/app/actions/invoices";
 import { canEditInvoice } from "@/lib/billing/invoice-edit";
 import { splitInvoiceNumber } from "@/lib/billing/invoice-number";
 import { InvoiceForm, type BatchOption, type Row } from "@/components/billing/invoice-form";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 
 export default async function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
   if (!canEditInvoice(tenant, invoice, role)) {
     return (
       <div className="flex flex-col items-start gap-4">
+        <BackButton />
         <h1 className="text-2xl font-semibold">Edit invoice</h1>
         <p className="text-muted-foreground text-sm">
           {tenant.allowInvoiceEdit
@@ -101,6 +103,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Edit {isPurchase ? "purchase" : "invoice"} {invoice.invoiceNumber}</h1>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { getExpiryStatus } from "@/lib/billing/expiry";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -32,6 +33,7 @@ export default async function ExpiryAlertsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-semibold">Expiry alerts</h1>
         <p className="text-muted-foreground text-sm">

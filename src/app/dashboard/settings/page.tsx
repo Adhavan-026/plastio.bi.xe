@@ -1,6 +1,7 @@
 import { getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { FontSizeControl } from "@/components/settings/font-size-control";
+import { BackButton } from "@/components/dashboard/back-button";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
@@ -9,6 +10,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-semibold">Shop settings</h1>
         <p className="text-muted-foreground text-sm">

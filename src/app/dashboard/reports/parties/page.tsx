@@ -3,6 +3,7 @@ import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { TopPartiesChart } from "@/components/reports/top-parties-chart";
+import { BackButton } from "@/components/dashboard/back-button";
 import {
   Table,
   TableBody,
@@ -55,6 +56,7 @@ export default async function PartiesReportPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Party-wise sales</h1>
         <ExportCsvButton

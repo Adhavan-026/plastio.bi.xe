@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { updateProduct } from "@/app/actions/products";
+import { BackButton } from "@/components/dashboard/back-button";
 import { ProductForm } from "../../product-form";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +18,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <h1 className="text-2xl font-semibold">Edit product</h1>
       <ProductForm
         action={updateProduct.bind(null, product.id)}

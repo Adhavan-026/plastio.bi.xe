@@ -3,6 +3,7 @@ import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { GstRateChart } from "@/components/reports/gst-rate-chart";
+import { BackButton } from "@/components/dashboard/back-button";
 import {
   Table,
   TableBody,
@@ -72,6 +73,7 @@ export default async function GstReportPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <BackButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">GST summary</h1>

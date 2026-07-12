@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { BackButton } from "@/components/dashboard/back-button";
 import { AdjustStockForm } from "./adjust-stock-form";
 
 export default async function AdjustStockPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,6 +26,7 @@ export default async function AdjustStockPage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col gap-8">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-semibold">Adjust stock — {product.name}</h1>
         <p className="text-muted-foreground text-sm">

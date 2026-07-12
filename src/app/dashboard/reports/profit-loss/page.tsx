@@ -3,6 +3,7 @@ import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { ProfitLossChart } from "@/components/reports/profit-loss-chart";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -56,6 +57,7 @@ export default async function ProfitLossReportPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div>
         <h1 className="text-2xl font-semibold">Profit &amp; loss</h1>
         <p className="text-muted-foreground text-sm">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const REPORTS = [
@@ -13,6 +14,7 @@ const REPORTS = [
 export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <h1 className="text-2xl font-semibold">Reports</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {REPORTS.map((report) => (

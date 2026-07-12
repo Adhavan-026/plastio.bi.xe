@@ -15,6 +15,7 @@ import {
 import { canEditInvoice } from "@/lib/billing/invoice-edit";
 import { amountToIndianWords } from "@/lib/billing/number-to-words";
 import { GST_STATE_CODES } from "@/lib/validations/gst-state-codes";
+import { BackButton } from "@/components/dashboard/back-button";
 import { PrintButton } from "./print-button";
 import { RecordPaymentForm } from "./record-payment-form";
 
@@ -144,24 +145,27 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end gap-2 print:hidden">
-        {invoice.type !== "QUOTATION" && canEditInvoice(tenant, invoice, role) && (
+      <div className="flex items-center justify-between gap-2 print:hidden">
+        <BackButton />
+        <div className="flex gap-2">
+          {invoice.type !== "QUOTATION" && canEditInvoice(tenant, invoice, role) && (
+            <Button
+              render={<Link href={`/dashboard/invoices/${invoice.id}/edit`} />}
+              nativeButton={false}
+              variant="outline"
+            >
+              Edit
+            </Button>
+          )}
           <Button
-            render={<Link href={`/dashboard/invoices/${invoice.id}/edit`} />}
+            render={<Link href={isPurchase ? "/dashboard/purchases" : "/dashboard/invoices"} />}
             nativeButton={false}
             variant="outline"
           >
-            Edit
+            Finish
           </Button>
-        )}
-        <Button
-          render={<Link href={isPurchase ? "/dashboard/purchases" : "/dashboard/invoices"} />}
-          nativeButton={false}
-          variant="outline"
-        >
-          Finish
-        </Button>
-        <PrintButton />
+          <PrintButton />
+        </div>
       </div>
 
       <div

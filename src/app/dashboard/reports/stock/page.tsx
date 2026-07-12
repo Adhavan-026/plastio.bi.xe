@@ -1,6 +1,7 @@
 import { getTenantDb } from "@/lib/tenant-db";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { StockValueChart } from "@/components/reports/stock-value-chart";
+import { BackButton } from "@/components/dashboard/back-button";
 import {
   Table,
   TableBody,
@@ -40,6 +41,7 @@ export default async function StockReportPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Stock valuation</h1>

@@ -4,6 +4,7 @@ import { computeBalancesByParty } from "@/lib/billing/party-balance";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { SearchBar } from "@/components/list/search-bar";
 import { ListPagination } from "@/components/list/list-pagination";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -54,6 +55,7 @@ export default async function PartiesPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Parties</h1>
         <Button render={<Link href="/dashboard/parties/new" />} nativeButton={false}>

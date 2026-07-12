@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTenantDb } from "@/lib/tenant-db";
 import { buildPartyLedger } from "@/lib/billing/party-ledger";
+import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,6 +40,7 @@ export default async function PartyStatementPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{party.name}</h1>

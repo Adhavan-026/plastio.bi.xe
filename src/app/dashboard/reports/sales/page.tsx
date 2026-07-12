@@ -3,6 +3,7 @@ import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { SalesTrendChart } from "@/components/reports/sales-trend-chart";
+import { BackButton } from "@/components/dashboard/back-button";
 import {
   Table,
   TableBody,
@@ -67,6 +68,7 @@ export default async function SalesReportPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Sales report</h1>
         <ExportCsvButton
