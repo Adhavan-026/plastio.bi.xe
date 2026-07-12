@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { getTenantContext, getTenantDb } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
-import { AppTopNav } from "@/components/dashboard/app-topnav";
+import { AppSidebar } from "@/components/dashboard/app-sidebar";
+import { AppTopBar } from "@/components/dashboard/app-topbar";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { tenantId } = await getTenantContext();
@@ -20,16 +21,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const lowStockCount = products.filter((p) => isLowStock(p.stockQty, p.lowStockAlert)).length;
 
   return (
-    <div className="flex min-h-full flex-col">
-      <AppTopNav
+    <div className="flex min-h-full">
+      <AppSidebar
         tenantName={tenant.name}
         businessType={tenant.businessType}
-        userName={userName}
-        dueCount={dueCount}
         lowStockCount={lowStockCount}
       />
-      <div className="mx-auto w-full max-w-6xl min-w-0 flex-1 p-6 print:max-w-none print:p-0">
-        {children}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <AppTopBar
+          tenantName={tenant.name}
+          businessType={tenant.businessType}
+          userName={userName}
+          dueCount={dueCount}
+          lowStockCount={lowStockCount}
+        />
+        <div className="mx-auto w-full max-w-6xl min-w-0 flex-1 p-6 print:max-w-none print:p-0">
+          {children}
+        </div>
       </div>
     </div>
   );

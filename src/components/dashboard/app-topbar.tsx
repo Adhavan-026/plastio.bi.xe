@@ -1,22 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
-  LayoutDashboard,
-  Receipt,
-  ShoppingCart,
-  Users,
-  Package,
-  BarChart3,
-  ShieldCheck,
-  Settings,
   Search,
   Bell,
-  Menu,
+  Settings,
+  HelpCircle,
   ChevronDown,
   LogOut,
+  Menu,
+  Plus,
+  Zap,
+  ShoppingCart,
+  UserPlus,
+  PackagePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
@@ -36,14 +35,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: number;
-};
-type BusinessType = "AGRO" | "TYRE" | "COMMON";
+import { buildNavItems, type BusinessType } from "@/components/dashboard/app-sidebar";
 
 function initials(value: string): string {
   const parts = value.trim().split(/\s+/);
@@ -52,26 +44,14 @@ function initials(value: string): string {
   return (first + second).toUpperCase() || "?";
 }
 
-function buildNavItems(businessType: BusinessType, lowStockCount: number): NavItem[] {
-  return [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/invoices", label: "Invoices", icon: Receipt },
-    { href: "/dashboard/purchases", label: "Purchases", icon: ShoppingCart },
-    { href: "/dashboard/parties", label: "Parties", icon: Users },
-    {
-      href: "/dashboard/products",
-      label: "Products",
-      icon: Package,
-      badge: lowStockCount > 0 ? lowStockCount : undefined,
-    },
-    { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
-    ...(businessType === "TYRE"
-      ? [{ href: "/dashboard/warranty-lookup", label: "Warranty", icon: ShieldCheck }]
-      : []),
-  ];
-}
+const NEW_ACTIONS = [
+  { href: "/dashboard/invoices/new", label: "New Sale", icon: Zap },
+  { href: "/dashboard/purchases/new", label: "New Purchase", icon: ShoppingCart },
+  { href: "/dashboard/parties/new", label: "Add Party", icon: UserPlus },
+  { href: "/dashboard/products/new", label: "Add Item", icon: PackagePlus },
+];
 
-export function AppTopNav({
+export function AppTopBar({
   tenantName,
   businessType,
   userName,
@@ -84,32 +64,24 @@ export function AppTopNav({
   dueCount: number;
   lowStockCount: number;
 }) {
-  const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const logoutFormRef = useRef<HTMLFormElement>(null);
-  const itemRefs = useRef(new Map<string, HTMLAnchorElement>());
-  const [highlight, setHighlight] = useState<{ left: number; width: number } | null>(null);
 
   const items = buildNavItems(businessType, lowStockCount);
-  const isActive = (href: string) =>
-    href === "/dashboard" ? pathname === href : pathname.startsWith(href);
-
-  function repositionHighlight() {
-    const active = items.find((item) => isActive(item.href));
-    const el = active ? itemRefs.current.get(active.href) : undefined;
-    if (el) setHighlight({ left: el.offsetLeft, width: el.offsetWidth });
-  }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(repositionHighlight, [pathname]);
 
   useEffect(() => {
-    window.addEventListener("resize", repositionHighlight);
-    return () => window.removeEventListener("resize", repositionHighlight);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key.toLowerCase() === "q") {
+        e.preventDefault();
+        router.push("/dashboard/invoices/new");
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [router]);
 
   function openSearch() {
     setSearchOpen(true);
@@ -117,7 +89,7 @@ export function AppTopNav({
   }
 
   return (
-    <header className="bg-card sticky top-0 z-20 flex items-center gap-2 border-b px-3 py-2.5 shadow-xs sm:gap-4 sm:px-4 print:hidden">
+    <header className="bg-card sticky top-0 z-20 flex items-center gap-2 border-b px-3 py-2.5 shadow-xs sm:gap-3 sm:px-5 print:hidden">
       {/* mobile menu */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <Button
@@ -137,9 +109,9 @@ export function AppTopNav({
           </SheetHeader>
           <div className="flex items-center gap-2.5 border-b p-4">
             <span className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
-              <Receipt className="size-4" />
+              <Zap className="size-4" />
             </span>
-            <span className="text-sm font-bold">Universal Billing</span>
+            <span className="truncate text-sm font-bold">{tenantName}</span>
           </div>
           <nav className="flex flex-col gap-1 p-3">
             {items.map((item) => (
@@ -147,12 +119,7 @@ export function AppTopNav({
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive(item.href)
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                )}
+                className="text-muted-foreground hover:bg-secondary hover:text-foreground flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
               >
                 <item.icon className="size-4" />
                 {item.label}
@@ -163,96 +130,57 @@ export function AppTopNav({
                 )}
               </Link>
             ))}
-            <div className="bg-border my-1 h-px" />
-            <Link
-              href="/dashboard/settings"
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive("/dashboard/settings")
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-              )}
-            >
-              <Settings className="size-4" />
-              Settings
-            </Link>
           </nav>
         </SheetContent>
       </Sheet>
 
-      {/* brand */}
-      <Link
-        href="/dashboard"
-        className="flex shrink-0 items-center gap-2"
-        aria-label="Universal Billing System"
-      >
-        <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg">
-          <Receipt className="size-4" />
-        </span>
-        <span className="hidden text-sm font-bold sm:inline">Universal Billing</span>
-      </Link>
-
-      {/* segmented pill nav */}
-      <nav className="bg-secondary/60 relative hidden max-w-full items-center gap-2 overflow-x-auto rounded-full border p-1 lg:flex">
-        {highlight && (
-          <span
-            aria-hidden
-            className="bg-card absolute inset-y-1 left-0 rounded-full shadow-sm transition-[transform,width] duration-300 ease-out"
-            style={{ width: highlight.width, transform: `translateX(${highlight.left}px)` }}
-          />
+      {/* search */}
+      <div
+        className={cn(
+          "flex items-center overflow-hidden rounded-lg border border-transparent transition-[width] duration-200",
+          searchOpen ? "bg-secondary/60 border-input w-44 sm:w-64" : "w-8"
         )}
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            ref={(el) => {
-              if (el) itemRefs.current.set(item.href, el);
-            }}
-            className={cn(
-              "relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-              isActive(item.href) ? "text-accent-foreground" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <item.icon className="size-4" />
-            {item.label}
-            {!!item.badge && (
-              <span className="bg-destructive text-destructive-foreground flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold">
-                {item.badge}
-              </span>
-            )}
-          </Link>
-        ))}
-      </nav>
-
-      {/* right actions */}
-      <div className="ml-auto flex shrink-0 items-center gap-1.5">
-        <div
-          className={cn(
-            "flex items-center overflow-hidden rounded-lg border border-transparent transition-[width] duration-200",
-            searchOpen ? "bg-secondary/60 border-input w-44 sm:w-56" : "w-8"
-          )}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0"
+          aria-label="Search"
+          onClick={openSearch}
         >
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="shrink-0"
-            aria-label="Search"
-            onClick={openSearch}
+          <Search className="size-4" />
+        </Button>
+        <input
+          ref={searchInputRef}
+          type="text"
+          placeholder="Search invoices, parties…"
+          className="placeholder:text-muted-foreground w-full bg-transparent pr-2 text-sm outline-none"
+          onBlur={(e) => {
+            if (!e.target.value) setSearchOpen(false);
+          }}
+        />
+      </div>
+
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="bg-primary text-primary-foreground hover:bg-primary/90 flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold outline-none transition-colors"
+            aria-label="Create new"
           >
-            <Search className="size-4" />
-          </Button>
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search invoices, parties…"
-            className="placeholder:text-muted-foreground w-full bg-transparent pr-2 text-sm outline-none"
-            onBlur={(e) => {
-              if (!e.target.value) setSearchOpen(false);
-            }}
-          />
-        </div>
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">New</span>
+            <span className="hidden text-xs font-normal opacity-80 md:inline">(Ctrl+Q)</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {NEW_ACTIONS.map((action) => (
+              <DropdownMenuItem key={action.href} render={<Link href={action.href} />}>
+                <action.icon />
+                {action.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -298,12 +226,40 @@ export function AppTopNav({
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="hidden shrink-0 sm:inline-flex"
+          aria-label="Settings"
+          render={<Link href="/dashboard/settings" />}
+          nativeButton={false}
+        >
+          <Settings className="size-4" />
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="hover:bg-secondary/60 hidden size-8 shrink-0 items-center justify-center rounded-lg outline-none transition-colors sm:inline-flex"
+            aria-label="Help"
+          >
+            <HelpCircle className="text-muted-foreground size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel>Keyboard shortcuts</DropdownMenuLabel>
+            <div className="text-muted-foreground flex items-center justify-between px-2 py-1.5 text-sm">
+              <span>New sale</span>
+              <kbd className="bg-secondary rounded px-1.5 py-0.5 text-xs font-semibold">Ctrl+Q</kbd>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <DropdownMenu>
           <DropdownMenuTrigger className="hover:bg-secondary/60 border-input flex shrink-0 items-center gap-1.5 rounded-full border py-1 pr-2 pl-1 outline-none transition-colors">
             <span className="bg-accent text-accent-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold">
               {initials(userName)}
             </span>
-            <ChevronDown className="text-muted-foreground size-3.5" />
+            <ChevronDown className="text-muted-foreground hidden size-3.5 sm:inline" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
             <div className="flex items-center gap-2.5 px-1.5 py-1.5">
