@@ -194,7 +194,7 @@ export function AppTopNav({
       </Link>
 
       {/* segmented pill nav */}
-      <nav className="bg-secondary/60 relative hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-full border p-1 lg:flex">
+      <nav className="bg-secondary/60 relative hidden max-w-full items-center gap-2 overflow-x-auto rounded-full border p-1 lg:flex">
         {highlight && (
           <span
             aria-hidden
