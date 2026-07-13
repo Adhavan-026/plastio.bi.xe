@@ -1,5 +1,6 @@
-import { Receipt, ReceiptText, PackageSearch, ChartNoAxesCombined, ShieldCheck } from "lucide-react";
+import { ReceiptText, PackageSearch, ChartNoAxesCombined, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Logo } from "@/components/logo";
 import { LoginForm } from "./login-form";
 
 const FEATURES = [
@@ -16,11 +17,8 @@ export default function LoginPage() {
         <div className="absolute top-1/4 -left-24 size-72 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute -right-16 bottom-0 size-80 rounded-full bg-white/10 blur-3xl" />
 
-        <div className="relative flex items-center gap-2.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
-            <Receipt className="size-4.5" />
-          </span>
-          <span className="text-lg font-bold tracking-tight">Plastio.xe</span>
+        <div className="relative w-fit rounded-lg bg-white px-3 py-2">
+          <Logo className="h-6 w-auto" />
         </div>
 
         <div className="relative flex flex-col gap-8">

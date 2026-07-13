@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { BatchForm } from "./batch-form";
 
@@ -28,6 +29,7 @@ const STATUS_BADGE_VARIANT: Record<string, "destructive" | "warning" | "success"
 };
 
 export default async function ProductBatchesPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireActiveSubscription();
   const { id } = await params;
   const db = await getTenantDb();
 

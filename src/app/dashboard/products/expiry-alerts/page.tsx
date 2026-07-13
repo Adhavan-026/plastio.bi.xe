@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { getExpiryStatus } from "@/lib/billing/expiry";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function ExpiryAlertsPage() {
+  await requireActiveSubscription();
   const db = await getTenantDb();
 
   const batches = await db.stockBatch.findMany({

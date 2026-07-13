@@ -8,10 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { AdjustStockForm } from "./adjust-stock-form";
 
 export default async function AdjustStockPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireActiveSubscription();
   const { id } = await params;
   const db = await getTenantDb();
 

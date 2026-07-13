@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { getWarrantyExpiry, isWarrantyValid } from "@/lib/billing/warranty";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export default async function WarrantyLookupPage({
 }: {
   searchParams: Promise<{ serial?: string }>;
 }) {
+  await requireActiveSubscription();
   const { serial } = await searchParams;
   const db = await getTenantDb();
 

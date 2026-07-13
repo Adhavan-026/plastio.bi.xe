@@ -3,6 +3,7 @@ import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { TopItemsChart } from "@/components/reports/top-items-chart";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import {
   Table,
@@ -19,6 +20,7 @@ export default async function ItemsReportPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
+  await requireActiveSubscription();
   const params = await searchParams;
   const { from, to, fromStr, toStr } = resolveDateRange(params);
 

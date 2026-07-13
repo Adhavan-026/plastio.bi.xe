@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { isLowStock } from "@/lib/billing/low-stock";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/table";
 
 export default async function LowStockPage() {
+  await requireActiveSubscription();
   const db = await getTenantDb();
   const products = await db.product.findMany({
     where: { isActive: true },

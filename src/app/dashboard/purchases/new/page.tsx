@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { createPurchaseInvoice } from "@/app/actions/invoices";
 import { peekNextInvoiceNumber } from "@/lib/billing/invoice-number";
 import { InvoiceForm } from "@/components/billing/invoice-form";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 
 export default async function NewPurchaseInvoicePage() {
+  await requireActiveSubscription();
   const { tenantId, role } = await getTenantContext();
   const db = await getTenantDb();
 

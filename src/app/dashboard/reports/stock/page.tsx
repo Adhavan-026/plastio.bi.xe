@@ -1,6 +1,7 @@
 import { getTenantDb } from "@/lib/tenant-db";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { StockValueChart } from "@/components/reports/stock-value-chart";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import {
   Table,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/table";
 
 export default async function StockReportPage() {
+  await requireActiveSubscription();
   const db = await getTenantDb();
   const products = await db.product.findMany({
     where: { isActive: true },

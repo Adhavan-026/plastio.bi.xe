@@ -1,9 +1,11 @@
 import { getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { ProductBulkForm } from "../product-bulk-form";
 
 export default async function NewProductPage() {
+  await requireActiveSubscription();
   const { tenantId } = await getTenantContext();
   const tenant = await prisma.tenant.findUniqueOrThrow({
     where: { id: tenantId },

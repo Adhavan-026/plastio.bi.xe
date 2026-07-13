@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { getTenantDb } from "@/lib/tenant-db";
 import { updateParty } from "@/app/actions/parties";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { PartyForm } from "../../party-form";
 
 export default async function EditPartyPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireActiveSubscription();
   const { id } = await params;
   const db = await getTenantDb();
   const party = await db.party.findUnique({ where: { id } });

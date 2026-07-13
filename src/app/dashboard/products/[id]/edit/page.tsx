@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { updateProduct } from "@/app/actions/products";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { ProductForm } from "../../product-form";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireActiveSubscription();
   const { id } = await params;
   const { tenantId } = await getTenantContext();
   const db = await getTenantDb();

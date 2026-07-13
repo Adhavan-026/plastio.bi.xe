@@ -73,6 +73,12 @@ enum AdjustmentReason {
   OTHER
 }
 
+enum SubscriptionPlan {
+  DAILY
+  MONTHLY
+  YEARLY
+}
+
 model Tenant {
   id           String       @id @default(cuid())
   name         String
@@ -87,24 +93,80 @@ model Tenant {
   logoUrl       String?
   licenseNumber String? // Agro: pesticide/fertilizer dealer license, printed on invoices
 
+  // Tyre: default warranty period applied to new tyre products, so it
+  // doesn't need to be retyped on every product.
+  defaultWarrantyMonths Int?
+
   // Invoice editing (owner-controlled): when enabled, OWNER/MANAGER can edit
   // an invoice's date and details within this many days of the invoice date.
   allowInvoiceEdit      Boolean @default(false)
   invoiceEditWindowDays Int     @default(7)
 
-  users            User[]
-  products         Product[]
-  parties          Party[]
-  invoices         Invoice[]
-  payments         Payment[]
-  counters         Counter[]
-  stockAdjustments StockAdjustment[]
-  stockBatches     StockBatch[]
+  // Subscription / licensing (managed by the Super Admin). licenseKey and
+  // activationCode are the two keys most recently issued to this shop —
+  // issuing a new pair overwrites the old ones, so stale keys stop working
+  // immediately. subscriptionExpiresAt is the single source of truth for
+  // "is this shop currently allowed to use billing features" — no separate
+  // status enum, just compare against now().
+  licenseKey            String?           @unique
+  activationCode        String?           @unique
+  subscriptionPlan      SubscriptionPlan?
+  subscriptionExpiresAt DateTime?
+  keysRedeemedAt        DateTime?
+
+  users              User[]
+  products           Product[]
+  parties            Party[]
+  invoices           Invoice[]
+  payments           Payment[]
+  counters           Counter[]
+  stockAdjustments   StockAdjustment[]
+  stockBatches       StockBatch[]
+  subscriptionIssues SubscriptionIssue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("tenants")
+}
+
+// A platform operator who manages shops from the Super Admin panel —
+// entirely separate from Tenant/User, with its own auth (src/admin-auth.ts).
+model SuperAdmin {
+  id           String @id @default(cuid())
+  name         String
+  email        String @unique
+  passwordHash String
+
+  issuedSubscriptions SubscriptionIssue[]
+
+  createdAt DateTime @default(now())
+
+  @@map("super_admins")
+}
+
+// Audit trail of every key pair issued to a shop, one row per admin action —
+// Tenant only ever holds the CURRENT keys, this is the history.
+model SubscriptionIssue {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  plan           SubscriptionPlan
+  licenseKey     String
+  activationCode String
+
+  amountPaid Decimal? @db.Decimal(12, 2)
+  notes      String?
+
+  issuedByAdminId String
+  issuedByAdmin   SuperAdmin @relation(fields: [issuedByAdminId], references: [id])
+
+  issuedAt   DateTime  @default(now())
+  redeemedAt DateTime?
+
+  @@index([tenantId])
+  @@map("subscription_issues")
 }
 
 model User {

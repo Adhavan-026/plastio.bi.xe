@@ -21,13 +21,31 @@ export async function signup(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    state: formData.get("state"),
+    gstNumber: formData.get("gstNumber"),
+    phone: formData.get("phone"),
+    address: formData.get("address"),
+    licenseNumber: formData.get("licenseNumber"),
+    defaultWarrantyMonths: formData.get("defaultWarrantyMonths"),
   });
 
   if (!validatedFields.success) {
     return { errors: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { shopName, businessType, name, email, password } = validatedFields.data;
+  const {
+    shopName,
+    businessType,
+    name,
+    email,
+    password,
+    state,
+    gstNumber,
+    phone,
+    address,
+    licenseNumber,
+    defaultWarrantyMonths,
+  } = validatedFields.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -40,6 +58,12 @@ export async function signup(
     data: {
       name: shopName,
       businessType,
+      state,
+      gstNumber,
+      phone,
+      address,
+      licenseNumber: businessType === "AGRO" ? licenseNumber : undefined,
+      defaultWarrantyMonths: businessType === "TYRE" ? defaultWarrantyMonths : undefined,
       users: {
         create: {
           name,

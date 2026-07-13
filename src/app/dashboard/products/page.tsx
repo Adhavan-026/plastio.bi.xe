@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { SearchBar } from "@/components/list/search-bar";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -22,6 +23,7 @@ export default async function ProductsPage({
 }: {
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
+  await requireActiveSubscription();
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
   const page = resolvePage(params);

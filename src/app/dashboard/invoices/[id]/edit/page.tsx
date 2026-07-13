@@ -6,10 +6,12 @@ import { updateInvoice } from "@/app/actions/invoices";
 import { canEditInvoice } from "@/lib/billing/invoice-edit";
 import { splitInvoiceNumber } from "@/lib/billing/invoice-number";
 import { InvoiceForm, type BatchOption, type Row } from "@/components/billing/invoice-form";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { Button } from "@/components/ui/button";
 
 export default async function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireActiveSubscription();
   const { id } = await params;
   const { tenantId, role } = await getTenantContext();
   const db = await getTenantDb();

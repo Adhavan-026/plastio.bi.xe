@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -11,7 +12,8 @@ const REPORTS = [
   { href: "/dashboard/reports/profit-loss", title: "Profit & loss", description: "Revenue vs. cost of goods sold over a date range" },
 ];
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  await requireActiveSubscription();
   return (
     <div className="flex flex-col gap-6">
       <BackButton />

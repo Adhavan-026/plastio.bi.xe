@@ -17,6 +17,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LogoMark } from "@/components/logo";
 
 export type NavItem = {
   href: string;
@@ -89,9 +90,7 @@ export function AppSidebar({
       )}
     >
       <div className="flex items-center gap-2.5 border-b px-4 py-4">
-        <span className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
-          <Receipt className="size-4.5" />
-        </span>
+        <LogoMark className="size-9 shrink-0" />
         {!collapsed && (
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="truncate text-sm font-bold">{tenantName}</span>

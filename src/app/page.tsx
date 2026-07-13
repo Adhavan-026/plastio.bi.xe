@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Receipt,
   ReceiptText,
   PackageSearch,
   ChartNoAxesCombined,
@@ -15,6 +14,7 @@ import {
   Disc3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 
 const AUDIENCES = ["Agro & Fertilizer Shops", "Tyre & Auto Shops", "General Retail"];
 
@@ -197,12 +197,7 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-white/80 px-6 py-4 backdrop-blur-sm sm:px-10">
-        <div className="flex items-center gap-2.5">
-          <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg">
-            <Receipt className="size-4" />
-          </span>
-          <span className="text-lg font-bold tracking-tight">Plastio.xe</span>
-        </div>
+        <Logo className="h-7 w-auto" />
         <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
           <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
             Features
@@ -434,12 +429,7 @@ export default function Home() {
 
       <footer className="border-t px-6 py-10 sm:px-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-2.5">
-            <span className="bg-primary text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-lg">
-              <Receipt className="size-3.5" />
-            </span>
-            <span className="text-sm font-bold">Plastio.xe</span>
-          </div>
+          <Logo className="h-5 w-auto" />
           <p className="text-muted-foreground text-xs">
             &copy; {new Date().getFullYear()} Plastio.xe. Built for Indian retail.
           </p>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { computeBalancesByParty } from "@/lib/billing/party-balance";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { SearchBar } from "@/components/list/search-bar";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -21,6 +22,7 @@ export default async function PartiesPage({
 }: {
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
+  await requireActiveSubscription();
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
   const page = resolvePage(params);

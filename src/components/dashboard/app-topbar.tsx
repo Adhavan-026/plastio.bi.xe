@@ -36,6 +36,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { buildNavItems, type BusinessType } from "@/components/dashboard/app-sidebar";
+import { LogoMark } from "@/components/logo";
 
 function initials(value: string): string {
   const parts = value.trim().split(/\s+/);
@@ -108,9 +109,7 @@ export function AppTopBar({
             <SheetDescription>Dashboard navigation menu.</SheetDescription>
           </SheetHeader>
           <div className="flex items-center gap-2.5 border-b p-4">
-            <span className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
-              <Zap className="size-4" />
-            </span>
+            <LogoMark className="size-9 shrink-0" />
             <span className="truncate text-sm font-bold">{tenantName}</span>
           </div>
           <nav className="flex flex-col gap-1 p-3">

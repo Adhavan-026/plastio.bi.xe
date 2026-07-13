@@ -1,8 +1,10 @@
 import { createParty } from "@/app/actions/parties";
+import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import { PartyForm } from "../party-form";
 
-export default function NewPartyPage() {
+export default async function NewPartyPage() {
+  await requireActiveSubscription();
   return (
     <div className="flex flex-col gap-6">
       <BackButton />
