@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { Sprout, Disc3, Store, ArrowRight, Check } from "lucide-react";
 import { signup } from "@/app/actions/auth";
@@ -49,6 +49,24 @@ const WARRANTY_OPTIONS = ["3", "6", "12", "18", "24"];
 
 const STEP_LABELS = ["Account", "Business", "Store details", "Details"];
 
+// Which wizard step each form field lives on, so server-side validation
+// errors can pull the user back to the step where the message is visible —
+// otherwise the error renders inside a hidden step and the final "Create
+// account" click looks like it did nothing.
+const FIELD_STEP: Record<string, number> = {
+  name: 0,
+  email: 0,
+  password: 0,
+  businessType: 1,
+  shopName: 2,
+  state: 2,
+  gstNumber: 2,
+  phone: 2,
+  address: 2,
+  licenseNumber: 3,
+  defaultWarrantyMonths: 3,
+};
+
 export function SignupForm() {
   const [state, action, pending] = useActionState(signup, undefined);
   const [step, setStep] = useState(0);
@@ -65,10 +83,22 @@ export function SignupForm() {
   const totalSteps = hasDomainStep ? 4 : 3;
   const isLastStep = step === totalSteps - 1;
 
+  // If the server rejected the submit, jump to the earliest step that has an
+  // error so the message is actually on screen.
+  useEffect(() => {
+    if (!state?.errors) return;
+    const steps = Object.keys(state.errors)
+      .map((field) => FIELD_STEP[field])
+      .filter((s) => s !== undefined);
+    if (steps.length > 0) setStep(Math.min(...steps));
+  }, [state]);
+
   const isEmailValid = /^\S+@\S+\.\S+$/.test(email);
+  const isPasswordValid =
+    password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
   const stepValid =
     step === 0
-      ? name.trim().length >= 2 && isEmailValid && password.length >= 8
+      ? name.trim().length >= 2 && isEmailValid && isPasswordValid
       : step === 1
         ? businessType !== ""
         : step === 2
