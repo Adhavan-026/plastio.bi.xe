@@ -326,12 +326,63 @@ export function InvoiceForm({
     () => computeTotals(rows, billDiscountPercent, interState),
     [rows, billDiscountPercent, interState]
   );
-  const grandTotal =
-    totals.taxableAmount +
-    totals.cgstAmount +
-    totals.sgstAmount +
-    totals.igstAmount -
-    (Number(exchangeValue) || 0);
+  const preExchangeTotal =
+    totals.taxableAmount + totals.cgstAmount + totals.sgstAmount + totals.igstAmount;
+  const grandTotal = preExchangeTotal - (Number(exchangeValue) || 0);
+
+  // "Round figure" pricing: the shopkeeper types the final total the customer
+  // agreed to pay, and every item's rate is scaled proportionally so taxable
+  // value and GST are derived backwards from that figure. The bill stays
+  // GST-correct — it's just re-priced.
+  const [totalDraft, setTotalDraft] = useState<string | null>(null);
+
+  // ₹ contributed to the final total by one unit of rate on this row.
+  function rateMultiplier(row: Row): number {
+    const qty = Number(row.quantity) || 0;
+    const itemDisc = Number(row.discountPercent) || 0;
+    const billDisc = Number(billDiscountPercent) || 0;
+    const gst = Number(row.gstRate) || 0;
+    return qty * (1 - itemDisc / 100) * (1 - billDisc / 100) * (1 + gst / 100);
+  }
+
+  function applyRoundTotal() {
+    if (totalDraft === null) return;
+    const desired = Number(totalDraft);
+    setTotalDraft(null);
+    if (!Number.isFinite(desired) || desired <= 0) return;
+    if (rows.length === 0 || preExchangeTotal <= 0) return;
+    if (Math.abs(desired - grandTotal) < 0.005) return;
+
+    const target = desired + (Number(exchangeValue) || 0);
+    const scale = target / preExchangeTotal;
+    pushRowHistory();
+
+    const scaled = rows.map((row) => ({
+      ...row,
+      rate: (Math.round(Number(row.rate) * scale * 100) / 100).toFixed(2),
+    }));
+    // Rates are rounded to paise, so the scaled bill can miss the target by a
+    // few paise — absorb the residue into the row with the largest amount.
+    const achieved = scaled.reduce((sum, row) => sum + Number(row.rate) * rateMultiplier(row), 0);
+    const residual = target - achieved;
+    if (Math.abs(residual) >= 0.005) {
+      let bestIdx = -1;
+      let bestAmount = 0;
+      scaled.forEach((row, i) => {
+        const amount = Number(row.rate) * rateMultiplier(row);
+        if (rateMultiplier(row) > 0 && amount >= bestAmount) {
+          bestAmount = amount;
+          bestIdx = i;
+        }
+      });
+      if (bestIdx >= 0) {
+        const row = scaled[bestIdx];
+        const adjusted = Number(row.rate) + residual / rateMultiplier(row);
+        scaled[bestIdx] = { ...row, rate: (Math.round(adjusted * 100) / 100).toFixed(2) };
+      }
+    }
+    setRows(scaled);
+  }
 
   function updateRow(key: string, patch: Partial<Row>) {
     setRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -914,13 +965,34 @@ export function InvoiceForm({
               </div>
             )}
             <div className="my-1 border-t" />
-            <div className="flex items-baseline justify-between">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-bold">Total payable</span>
-              <span className="text-primary text-2xl font-bold tabular-nums">
-                ₹{grandTotal.toFixed(2)}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-primary text-2xl font-bold">₹</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  aria-label="Total payable — edit to re-price the bill"
+                  value={totalDraft ?? grandTotal.toFixed(2)}
+                  onFocus={() => setTotalDraft(grandTotal.toFixed(2))}
+                  onChange={(e) => setTotalDraft(e.target.value)}
+                  onBlur={applyRoundTotal}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  disabled={rows.length === 0}
+                  className="text-primary h-10 w-36 text-right !text-2xl font-bold tabular-nums"
+                />
+              </div>
             </div>
-            <p className="text-muted-foreground text-xs">Server recalculates the exact figure on save.</p>
+            <p className="text-muted-foreground text-xs">
+              Type a round figure and press Enter — item rates, taxable value, and GST re-adjust
+              automatically. Server recalculates the exact figure on save.
+            </p>
           </div>
 
           {editMode ? (

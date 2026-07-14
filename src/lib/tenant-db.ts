@@ -10,6 +10,8 @@ import type { Role } from "@/generated/prisma/enums";
 const TENANT_SCOPED_MODELS = new Set([
   "User",
   "Product",
+  "ProductCategory",
+  "ProductPriceLog",
   "Party",
   "Invoice",
   "InvoiceItem",

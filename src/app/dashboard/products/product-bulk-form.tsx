@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { createProducts } from "@/app/actions/products";
+import { AddCategoryDialog } from "@/components/products/add-category-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ type ProductRow = {
   hsnCode: string;
   unit: string;
   category: string;
+  categoryId: string;
   gstRate: string;
   purchasePrice: string;
   sellingPrice: string;
@@ -39,6 +41,7 @@ function emptyRow(): ProductRow {
     hsnCode: "",
     unit: "PCS",
     category: "",
+    categoryId: "",
     gstRate: "0",
     purchasePrice: "0",
     sellingPrice: "0",
@@ -51,8 +54,15 @@ function emptyRow(): ProductRow {
   };
 }
 
-export function ProductBulkForm({ showTyreFields }: { showTyreFields?: boolean }) {
+export function ProductBulkForm({
+  showTyreFields,
+  categories: initialCategories,
+}: {
+  showTyreFields?: boolean;
+  categories: { id: string; name: string }[];
+}) {
   const [state, formAction, pending] = useActionState(createProducts, undefined);
+  const [categories, setCategories] = useState(initialCategories);
   // Starts empty — crypto.randomUUID() in emptyRow() must only ever run from a
   // client-triggered interaction, never as part of the initial render, or the
   // server and client would generate different ids and mismatch on hydration.
@@ -92,6 +102,7 @@ export function ProductBulkForm({ showTyreFields }: { showTyreFields?: boolean }
       hsnCode: row.hsnCode,
       unit: row.unit,
       category: row.category,
+      categoryId: row.categoryId,
       gstRate: row.gstRate,
       purchasePrice: row.purchasePrice,
       sellingPrice: row.sellingPrice,
@@ -205,6 +216,35 @@ export function ProductBulkForm({ showTyreFields }: { showTyreFields?: boolean }
                 />
               </>
             )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`categoryId-${row.key}`}>Product category</Label>
+            <div className="flex items-center gap-2">
+              <Select
+                value={row.categoryId}
+                onValueChange={(v) => updateRow(row.key, { categoryId: v as string })}
+                items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
+              >
+                <SelectTrigger id={`categoryId-${row.key}`} className="w-full">
+                  <SelectValue placeholder="Other (uncategorized)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <AddCategoryDialog
+                triggerVariant="ghost"
+                onCreated={(c) => {
+                  setCategories((prev) => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)));
+                  updateRow(row.key, { categoryId: c.id });
+                }}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

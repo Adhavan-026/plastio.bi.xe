@@ -11,9 +11,10 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
-  const [product, tenant] = await Promise.all([
+  const [product, tenant, categories] = await Promise.all([
     db.product.findUnique({ where: { id } }),
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
+    db.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   if (!product) notFound();
@@ -24,11 +25,13 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <h1 className="text-2xl font-semibold">Edit product</h1>
       <ProductForm
         action={updateProduct.bind(null, product.id)}
+        categories={categories}
         defaultValues={{
           name: product.name,
           hsnCode: product.hsnCode,
           unit: product.unit,
           category: product.category,
+          categoryId: product.categoryId,
           gstRate: product.gstRate.toString(),
           purchasePrice: product.purchasePrice.toString(),
           sellingPrice: product.sellingPrice.toString(),

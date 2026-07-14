@@ -116,6 +116,8 @@ model Tenant {
 
   users              User[]
   products           Product[]
+  productCategories  ProductCategory[]
+  productPriceLogs   ProductPriceLog[]
   parties            Party[]
   invoices           Invoice[]
   payments           Payment[]
@@ -203,8 +205,13 @@ model Product {
   stockQty      Decimal @default(0) @db.Decimal(12, 3)
   lowStockAlert Decimal @default(0) @db.Decimal(12, 3)
 
-  category String?
-  isActive Boolean @default(true)
+  // Legacy free-text field — for Tyre tenants this is repurposed as the
+  // vehicle a tyre fits (Car/Bike/Truck...); for others it's a freeform
+  // note. Distinct from categoryId below, which is the shop's own
+  // Tyre/Tube/Other-style product grouping shown on the products page.
+  category   String?
+  categoryId String?
+  isActive   Boolean @default(true)
 
   // Tyre module — only meaningful/shown when the tenant's businessType is TYRE.
   tyreBrand     String?
@@ -213,15 +220,59 @@ model Product {
   tyreLoadIndex String?
 
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productCategory  ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   invoiceItems     InvoiceItem[]
   stockAdjustments StockAdjustment[]
   stockBatches     StockBatch[]
+  priceLogs        ProductPriceLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([categoryId])
   @@map("products")
+}
+
+// One row per price edit made from the products page's "Price management"
+// dialog — a running history of buying/selling price so a shop can see how
+// margins moved over time. Profit/margin isn't stored, just derived from
+// purchasePrice/sellingPrice at display time.
+model ProductPriceLog {
+  id        String @id @default(cuid())
+  tenantId  String
+  productId String
+
+  purchasePrice Decimal @db.Decimal(12, 2)
+  sellingPrice  Decimal @db.Decimal(12, 2)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  changedAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([productId])
+  @@map("product_price_logs")
+}
+
+// Shop-defined product groupings shown as a filter dropdown on the products
+// page (e.g. Tyre / Tube / Battery) — distinct per tenant, created on the fly
+// via "Add category". Products left uncategorized show under "Other".
+model ProductCategory {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name String
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("product_categories")
 }
 
 // Agro module — a batch/lot of stock with its own expiry, so selling can

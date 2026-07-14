@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { AddCategoryDialog } from "@/components/products/add-category-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +17,13 @@ import type { ProductFormState } from "@/lib/validations/product";
 
 type ProductFormProps = {
   action: (state: ProductFormState, formData: FormData) => Promise<ProductFormState>;
+  categories: { id: string; name: string }[];
   defaultValues?: {
     name: string;
     hsnCode: string | null;
     unit: string;
     category: string | null;
+    categoryId: string | null;
     gstRate: string;
     purchasePrice: string;
     sellingPrice: string;
@@ -35,8 +38,16 @@ type ProductFormProps = {
   showTyreFields?: boolean;
 };
 
-export function ProductForm({ action, defaultValues, submitLabel, showTyreFields }: ProductFormProps) {
+export function ProductForm({
+  action,
+  categories: initialCategories,
+  defaultValues,
+  submitLabel,
+  showTyreFields,
+}: ProductFormProps) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const [categories, setCategories] = useState(initialCategories);
+  const [categoryId, setCategoryId] = useState(defaultValues?.categoryId ?? "");
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
@@ -66,6 +77,39 @@ export function ProductForm({ action, defaultValues, submitLabel, showTyreFields
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="categoryId">Product category</Label>
+        <input type="hidden" name="categoryId" value={categoryId} />
+        <div className="flex items-center gap-2">
+          <Select
+            value={categoryId}
+            onValueChange={(v) => setCategoryId(v as string)}
+            items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
+          >
+            <SelectTrigger id="categoryId" className="w-full">
+              <SelectValue placeholder="Other (uncategorized)" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <AddCategoryDialog
+            onCreated={(c) => {
+              setCategories((prev) => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)));
+              setCategoryId(c.id);
+            }}
+          />
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Groups products on the products page (e.g. Tyre, Tube, Battery). Leave unset for
+          &ldquo;Other&rdquo;.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">

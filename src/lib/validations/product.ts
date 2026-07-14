@@ -19,6 +19,7 @@ export const ProductFormSchema = z.object({
   hsnCode: z.string().trim().optional().or(z.literal("")),
   unit: z.enum(UNITS),
   category: z.string().trim().optional().or(z.literal("")),
+  categoryId: z.string().trim().optional().or(z.literal("")),
   gstRate: z.coerce
     .number({ error: "GST % must be a number." })
     .min(0, { error: "GST % can't be negative." })
@@ -49,6 +50,7 @@ export const ProductLineSchema = z.object({
   hsnCode: z.string().trim().optional().or(z.literal("")),
   unit: z.enum(UNITS),
   category: z.string().trim().optional().or(z.literal("")),
+  categoryId: z.string().trim().optional().or(z.literal("")),
   gstRate: z.coerce
     .number({ error: "GST % must be a number." })
     .min(0, { error: "GST % can't be negative." })

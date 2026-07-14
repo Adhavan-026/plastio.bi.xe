@@ -92,6 +92,7 @@ export async function createProducts(
       hsnCode: item.hsnCode || null,
       unit: item.unit,
       category: item.category || null,
+      categoryId: item.categoryId || null,
       gstRate: item.gstRate,
       purchasePrice: item.purchasePrice,
       sellingPrice: item.sellingPrice,
@@ -121,13 +122,14 @@ export async function createProduct(
   }
 
   const db = await getTenantDb();
-  const { hsnCode, category, tyreBrand, tyreSize, tyrePattern, tyreLoadIndex, ...rest } =
+  const { hsnCode, category, categoryId, tyreBrand, tyreSize, tyrePattern, tyreLoadIndex, ...rest } =
     validatedFields.data;
   await db.product.create({
     data: {
       ...rest,
       hsnCode: hsnCode || null,
       category: category || null,
+      categoryId: categoryId || null,
       tyreBrand: tyreBrand || null,
       tyreSize: tyreSize || null,
       tyrePattern: tyrePattern || null,
@@ -154,7 +156,7 @@ export async function updateProduct(
   }
 
   const db = await getTenantDb();
-  const { hsnCode, category, tyreBrand, tyreSize, tyrePattern, tyreLoadIndex, ...rest } =
+  const { hsnCode, category, categoryId, tyreBrand, tyreSize, tyrePattern, tyreLoadIndex, ...rest } =
     validatedFields.data;
 
   const existing = await db.product.findUnique({ where: { id: productId } });
@@ -168,6 +170,7 @@ export async function updateProduct(
       ...rest,
       hsnCode: hsnCode || null,
       category: category || null,
+      categoryId: categoryId || null,
       tyreBrand: tyreBrand || null,
       tyreSize: tyreSize || null,
       tyrePattern: tyrePattern || null,

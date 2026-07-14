@@ -3,7 +3,6 @@ import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { PrintReportButton } from "@/components/reports/print-report-button";
-import { SalesTrendChart } from "@/components/reports/sales-trend-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import {
@@ -16,12 +15,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type DailyRow = {
+type SaleRow = {
   date: string;
-  invoiceCount: number;
-  subtotal: number;
-  tax: number;
-  total: number;
+  customer: string;
+  product: string;
+  quantity: number;
+  buyingPrice: number;
+  sellingPrice: number;
+  marginPercent: number;
 };
 
 export default async function SalesReportPage({
@@ -34,40 +35,42 @@ export default async function SalesReportPage({
   const { from, to, fromStr, toStr } = resolveDateRange(params);
 
   const db = await getTenantDb();
-  const invoices = await db.invoice.findMany({
-    where: { type: "SALES", invoiceDate: { gte: from, lte: to } },
+  const items = await db.invoiceItem.findMany({
+    where: { invoice: { type: "SALES", invoiceDate: { gte: from, lte: to } } },
     select: {
-      invoiceDate: true,
-      taxableAmount: true,
-      cgstAmount: true,
-      sgstAmount: true,
-      igstAmount: true,
-      totalAmount: true,
+      description: true,
+      quantity: true,
+      rate: true,
+      product: { select: { purchasePrice: true } },
+      invoice: {
+        select: {
+          invoiceDate: true,
+          invoiceNumber: true,
+          party: { select: { name: true } },
+        },
+      },
     },
-    orderBy: { invoiceDate: "asc" },
+    orderBy: [{ invoice: { invoiceDate: "asc" } }, { invoice: { invoiceNumber: "asc" } }],
   });
 
-  const rowsByDay = new Map<string, DailyRow>();
-  for (const inv of invoices) {
-    const key = inv.invoiceDate.toISOString().slice(0, 10);
-    const existing = rowsByDay.get(key) ?? { date: key, invoiceCount: 0, subtotal: 0, tax: 0, total: 0 };
-    existing.invoiceCount += 1;
-    existing.subtotal += Number(inv.taxableAmount);
-    existing.tax += Number(inv.cgstAmount) + Number(inv.sgstAmount) + Number(inv.igstAmount);
-    existing.total += Number(inv.totalAmount);
-    rowsByDay.set(key, existing);
-  }
-  const rows = Array.from(rowsByDay.values()).sort((a, b) => a.date.localeCompare(b.date));
+  const rows: SaleRow[] = items.map((item) => {
+    const sellingPrice = Number(item.rate);
+    const buyingPrice = item.product ? Number(item.product.purchasePrice) : 0;
+    const marginPercent = sellingPrice > 0 ? ((sellingPrice - buyingPrice) / sellingPrice) * 100 : 0;
+    return {
+      date: item.invoice.invoiceDate.toISOString().slice(0, 10),
+      customer: item.invoice.party?.name ?? "Walk-in",
+      product: item.description,
+      quantity: Number(item.quantity),
+      buyingPrice,
+      sellingPrice,
+      marginPercent,
+    };
+  });
 
-  const grandTotal = rows.reduce(
-    (acc, r) => ({
-      invoiceCount: acc.invoiceCount + r.invoiceCount,
-      subtotal: acc.subtotal + r.subtotal,
-      tax: acc.tax + r.tax,
-      total: acc.total + r.total,
-    }),
-    { invoiceCount: 0, subtotal: 0, tax: 0, total: 0 }
-  );
+  const totalBuying = rows.reduce((sum, r) => sum + r.buyingPrice * r.quantity, 0);
+  const totalSelling = rows.reduce((sum, r) => sum + r.sellingPrice * r.quantity, 0);
+  const overallMargin = totalSelling > 0 ? ((totalSelling - totalBuying) / totalSelling) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,10 +84,12 @@ export default async function SalesReportPage({
             filename={`sales-report-${fromStr}-to-${toStr}.csv`}
             columns={[
               { key: "date", label: "Date" },
-              { key: "invoiceCount", label: "Invoices" },
-              { key: "subtotal", label: "Taxable amount" },
-              { key: "tax", label: "Tax" },
-              { key: "total", label: "Total" },
+              { key: "customer", label: "Customer" },
+              { key: "product", label: "Product" },
+              { key: "quantity", label: "Quantity" },
+              { key: "buyingPrice", label: "Buying price" },
+              { key: "sellingPrice", label: "Selling price" },
+              { key: "marginPercent", label: "Profit margin %" },
             ]}
           />
         </div>
@@ -92,44 +97,57 @@ export default async function SalesReportPage({
 
       <DateRangeForm from={fromStr} to={toStr} />
 
-      <SalesTrendChart rows={rows} />
+      <p className="text-muted-foreground text-xs">
+        Buying price is each product&apos;s current purchase price (not the price at time of
+        sale). Margin % = (Selling &minus; Buying) &divide; Selling &times; 100, per unit —
+        quantity doesn&apos;t affect it.
+      </p>
 
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
-            <TableHead className="text-right">Invoices</TableHead>
-            <TableHead className="text-right">Taxable amount</TableHead>
-            <TableHead className="text-right">Tax</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Product</TableHead>
+            <TableHead className="text-right">Qty</TableHead>
+            <TableHead className="text-right">Buying price</TableHead>
+            <TableHead className="text-right">Selling price</TableHead>
+            <TableHead className="text-right">Margin %</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-muted-foreground text-center">
+              <TableCell colSpan={7} className="text-muted-foreground text-center">
                 No sales in this range.
               </TableCell>
             </TableRow>
           )}
-          {rows.map((row) => (
-            <TableRow key={row.date}>
+          {rows.map((row, i) => (
+            <TableRow key={i}>
               <TableCell>{new Date(row.date).toLocaleDateString("en-IN")}</TableCell>
-              <TableCell className="text-right">{row.invoiceCount}</TableCell>
-              <TableCell className="text-right">₹{row.subtotal.toFixed(2)}</TableCell>
-              <TableCell className="text-right">₹{row.tax.toFixed(2)}</TableCell>
-              <TableCell className="text-right">₹{row.total.toFixed(2)}</TableCell>
+              <TableCell>{row.customer}</TableCell>
+              <TableCell className="font-medium">{row.product}</TableCell>
+              <TableCell className="text-right tabular-nums">{row.quantity}</TableCell>
+              <TableCell className="text-right tabular-nums">₹{row.buyingPrice.toFixed(2)}</TableCell>
+              <TableCell className="text-right tabular-nums">₹{row.sellingPrice.toFixed(2)}</TableCell>
+              <TableCell
+                className={`text-right tabular-nums font-medium ${row.marginPercent < 0 ? "text-destructive" : ""}`}
+              >
+                {row.marginPercent.toFixed(1)}%
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
         {rows.length > 0 && (
           <TableFooter>
             <TableRow>
-              <TableCell className="font-medium">Total</TableCell>
-              <TableCell className="text-right font-medium">{grandTotal.invoiceCount}</TableCell>
-              <TableCell className="text-right font-medium">₹{grandTotal.subtotal.toFixed(2)}</TableCell>
-              <TableCell className="text-right font-medium">₹{grandTotal.tax.toFixed(2)}</TableCell>
-              <TableCell className="text-right font-medium">₹{grandTotal.total.toFixed(2)}</TableCell>
+              <TableCell colSpan={4} className="font-medium">
+                Total
+              </TableCell>
+              <TableCell className="text-right font-medium">₹{totalBuying.toFixed(2)}</TableCell>
+              <TableCell className="text-right font-medium">₹{totalSelling.toFixed(2)}</TableCell>
+              <TableCell className="text-right font-medium">{overallMargin.toFixed(1)}%</TableCell>
             </TableRow>
           </TableFooter>
         )}
