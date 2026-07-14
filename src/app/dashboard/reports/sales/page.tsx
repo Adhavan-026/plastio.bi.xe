@@ -3,6 +3,7 @@ import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { PrintReportButton } from "@/components/reports/print-report-button";
+import { SalesTrendChart } from "@/components/reports/sales-trend-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import {
@@ -72,6 +73,17 @@ export default async function SalesReportPage({
   const totalSelling = rows.reduce((sum, r) => sum + r.sellingPrice * r.quantity, 0);
   const overallMargin = totalSelling > 0 ? ((totalSelling - totalBuying) / totalSelling) * 100 : 0;
 
+  const dailyByDate = new Map<string, { revenue: number; profit: number }>();
+  for (const row of rows) {
+    const entry = dailyByDate.get(row.date) ?? { revenue: 0, profit: 0 };
+    entry.revenue += row.sellingPrice * row.quantity;
+    entry.profit += (row.sellingPrice - row.buyingPrice) * row.quantity;
+    dailyByDate.set(row.date, entry);
+  }
+  const dailyRows = Array.from(dailyByDate.entries())
+    .map(([date, v]) => ({ date, ...v }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   return (
     <div className="flex flex-col gap-6">
       <BackButton />
@@ -96,6 +108,8 @@ export default async function SalesReportPage({
       </div>
 
       <DateRangeForm from={fromStr} to={toStr} />
+
+      <SalesTrendChart rows={dailyRows} />
 
       <p className="text-muted-foreground text-xs">
         Buying price is each product&apos;s current purchase price (not the price at time of
