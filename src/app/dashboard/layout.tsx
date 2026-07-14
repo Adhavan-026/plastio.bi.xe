@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { AppTopBar } from "@/components/dashboard/app-topbar";
+import { SessionGuard } from "@/components/dashboard/session-guard";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { tenantId } = await getTenantContext();
@@ -22,6 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-full">
+      <SessionGuard />
       <AppSidebar
         tenantName={tenant.name}
         businessType={tenant.businessType}

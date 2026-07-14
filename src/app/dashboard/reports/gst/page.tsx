@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { PrintReportButton } from "@/components/reports/print-report-button";
 import { GstRateChart } from "@/components/reports/gst-rate-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
@@ -81,6 +82,7 @@ export default async function GstReportPage({
           <h1 className="text-2xl font-semibold">GST summary</h1>
           <p className="text-muted-foreground text-sm">GSTR-1 style — sales only, rate-wise and HSN-wise.</p>
         </div>
+        <PrintReportButton />
       </div>
 
       <DateRangeForm from={fromStr} to={toStr} />

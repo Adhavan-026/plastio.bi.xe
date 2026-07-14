@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { PrintReportButton } from "@/components/reports/print-report-button";
 import { TopItemsChart } from "@/components/reports/top-items-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
@@ -55,17 +56,20 @@ export default async function ItemsReportPage({
       <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Item-wise sales</h1>
-        <ExportCsvButton
-          rows={rows}
-          filename={`item-sales-${fromStr}-to-${toStr}.csv`}
-          columns={[
-            { key: "description", label: "Item" },
-            { key: "invoiceLines", label: "Times sold" },
-            { key: "quantity", label: "Quantity" },
-            { key: "taxable", label: "Taxable amount" },
-            { key: "revenue", label: "Revenue" },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <PrintReportButton />
+          <ExportCsvButton
+            rows={rows}
+            filename={`item-sales-${fromStr}-to-${toStr}.csv`}
+            columns={[
+              { key: "description", label: "Item" },
+              { key: "invoiceLines", label: "Times sold" },
+              { key: "quantity", label: "Quantity" },
+              { key: "taxable", label: "Taxable amount" },
+              { key: "revenue", label: "Revenue" },
+            ]}
+          />
+        </div>
       </div>
 
       <DateRangeForm from={fromStr} to={toStr} />

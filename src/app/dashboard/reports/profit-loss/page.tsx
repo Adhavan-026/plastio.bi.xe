@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { PrintReportButton } from "@/components/reports/print-report-button";
 import { ProfitLossChart } from "@/components/reports/profit-loss-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
@@ -103,7 +104,8 @@ export default async function ProfitLossReportPage({
 
       <ProfitLossChart rows={rows} />
 
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <PrintReportButton />
         <ExportCsvButton
           rows={rows}
           filename={`profit-loss-${fromStr}-to-${toStr}.csv`}

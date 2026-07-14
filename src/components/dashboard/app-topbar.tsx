@@ -17,8 +17,11 @@ import {
   UserPlus,
   PackagePlus,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
+import { saveBackupToDevice } from "@/lib/backup-file";
+import { markLoggingOut } from "@/lib/logout-state";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -68,8 +71,37 @@ export function AppTopBar({
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const logoutFormRef = useRef<HTMLFormElement>(null);
+
+  // Logout always exports a fresh backup to the user's device first, so
+  // every session ends with an up-to-date local copy of the shop's data.
+  async function handleLogout() {
+    if (backingUp) return;
+    setBackingUp(true);
+    try {
+      const result = await saveBackupToDevice(tenantName);
+      if (result === "cancelled" || result === "failed") {
+        const proceed = window.confirm(
+          result === "cancelled"
+            ? "Backup was not saved. Log out without a backup?"
+            : "Backup could not be created. Log out anyway?"
+        );
+        if (!proceed) return;
+      } else {
+        toast.success(
+          result === "saved"
+            ? "Backup updated on your device."
+            : "Backup downloaded to your device."
+        );
+      }
+      markLoggingOut();
+      logoutFormRef.current?.requestSubmit();
+    } finally {
+      setBackingUp(false);
+    }
+  }
 
   const items = buildNavItems(businessType, lowStockCount);
 
@@ -276,9 +308,9 @@ export function AppTopBar({
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => logoutFormRef.current?.requestSubmit()}>
+            <DropdownMenuItem variant="destructive" onClick={handleLogout}>
               <LogOut />
-              Log out
+              {backingUp ? "Backing up…" : "Log out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

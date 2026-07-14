@@ -1,5 +1,6 @@
 import { getTenantDb } from "@/lib/tenant-db";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { PrintReportButton } from "@/components/reports/print-report-button";
 import { StockValueChart } from "@/components/reports/stock-value-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
@@ -49,19 +50,22 @@ export default async function StockReportPage() {
           <h1 className="text-2xl font-semibold">Stock valuation</h1>
           <p className="text-muted-foreground text-sm">Current stock as of now.</p>
         </div>
-        <ExportCsvButton
-          rows={rows}
-          filename="stock-valuation.csv"
-          columns={[
-            { key: "name", label: "Product" },
-            { key: "unit", label: "Unit" },
-            { key: "quantity", label: "Quantity" },
-            { key: "purchasePrice", label: "Purchase price" },
-            { key: "sellingPrice", label: "Selling price" },
-            { key: "costValue", label: "Value at cost" },
-            { key: "sellingValue", label: "Value at selling price" },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <PrintReportButton />
+          <ExportCsvButton
+            rows={rows}
+            filename="stock-valuation.csv"
+            columns={[
+              { key: "name", label: "Product" },
+              { key: "unit", label: "Unit" },
+              { key: "quantity", label: "Quantity" },
+              { key: "purchasePrice", label: "Purchase price" },
+              { key: "sellingPrice", label: "Selling price" },
+              { key: "costValue", label: "Value at cost" },
+              { key: "sellingValue", label: "Value at selling price" },
+            ]}
+          />
+        </div>
       </div>
 
       <StockValueChart rows={rows} />

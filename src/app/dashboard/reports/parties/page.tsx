@@ -2,6 +2,7 @@ import { getTenantDb } from "@/lib/tenant-db";
 import { resolveDateRange } from "@/lib/reports/date-range";
 import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
+import { PrintReportButton } from "@/components/reports/print-report-button";
 import { TopPartiesChart } from "@/components/reports/top-parties-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
@@ -61,17 +62,20 @@ export default async function PartiesReportPage({
       <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Party-wise sales</h1>
-        <ExportCsvButton
-          rows={rows}
-          filename={`party-sales-${fromStr}-to-${toStr}.csv`}
-          columns={[
-            { key: "party", label: "Party" },
-            { key: "invoiceCount", label: "Invoices" },
-            { key: "revenue", label: "Revenue" },
-            { key: "paid", label: "Paid" },
-            { key: "due", label: "Due" },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <PrintReportButton />
+          <ExportCsvButton
+            rows={rows}
+            filename={`party-sales-${fromStr}-to-${toStr}.csv`}
+            columns={[
+              { key: "party", label: "Party" },
+              { key: "invoiceCount", label: "Invoices" },
+              { key: "revenue", label: "Revenue" },
+              { key: "paid", label: "Paid" },
+              { key: "due", label: "Due" },
+            ]}
+          />
+        </div>
       </div>
 
       <DateRangeForm from={fromStr} to={toStr} />
