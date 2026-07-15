@@ -3,7 +3,14 @@ import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { ADMIN_COOKIE_NAME, verifyAdminToken } from "@/lib/admin-session";
 
-const PUBLIC_ROUTES = new Set(["/", "/login", "/signup"]);
+const PUBLIC_ROUTES = new Set([
+  "/",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+]);
 const ADMIN_LOGIN_ROUTE = "/admin/login";
 
 // Optimistic checks only (JWT/cookie-signature only, no DB hit) — real

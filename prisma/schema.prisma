@@ -182,6 +182,16 @@ model User {
 
   isActive Boolean @default(true)
 
+  // Verified informationally, not enforced at login — existing users predate
+  // this field and would otherwise be locked out. Shows a dismissible nudge
+  // on the dashboard instead. Reused as the password-reset token pair too,
+  // since only one of either flow is ever in flight per user at a time.
+  emailVerifiedAt        DateTime?
+  emailVerifyToken       String?    @unique
+  emailVerifyExpiresAt   DateTime?
+  passwordResetToken     String?    @unique
+  passwordResetExpiresAt DateTime?
+
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

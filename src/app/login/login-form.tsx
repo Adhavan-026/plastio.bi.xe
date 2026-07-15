@@ -21,7 +21,12 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link href="/forgot-password" className="text-xs underline underline-offset-4">
+            Forgot password?
+          </Link>
+        </div>
         <Input id="password" name="password" type="password" required />
         {state?.errors?.password && (
           <p className="text-sm text-destructive">{state.errors.password[0]}</p>

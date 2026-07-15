@@ -5,11 +5,12 @@ import { isLowStock } from "@/lib/billing/low-stock";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { AppTopBar } from "@/components/dashboard/app-topbar";
 import { SessionGuard } from "@/components/dashboard/session-guard";
+import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { tenantId } = await getTenantContext();
+  const { tenantId, userId } = await getTenantContext();
   const db = await getTenantDb();
-  const [tenant, session, dueCount, products] = await Promise.all([
+  const [tenant, session, dueCount, products, currentUser] = await Promise.all([
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } }),
     auth(),
     db.invoice.count({ where: { type: "SALES", paymentStatus: { in: ["UNPAID", "PARTIAL"] } } }),
@@ -17,6 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       where: { isActive: true },
       select: { stockQty: true, lowStockAlert: true },
     }),
+    db.user.findUnique({ where: { id: userId }, select: { email: true, emailVerifiedAt: true } }),
   ]);
   const userName = session?.user?.name ?? "User";
   const lowStockCount = products.filter((p) => isLowStock(p.stockQty, p.lowStockAlert)).length;
@@ -37,7 +39,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
           dueCount={dueCount}
           lowStockCount={lowStockCount}
         />
-        <div className="mx-auto w-full max-w-6xl min-w-0 flex-1 p-6 print:max-w-none print:p-0">
+        <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col gap-4 p-6 print:max-w-none print:p-0">
+          {currentUser && !currentUser.emailVerifiedAt && (
+            <VerifyEmailBanner email={currentUser.email} />
+          )}
           {children}
         </div>
       </div>

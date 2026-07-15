@@ -57,6 +57,7 @@ const FIELD_STEP: Record<string, number> = {
   name: 0,
   email: 0,
   password: 0,
+  confirmPassword: 0,
   businessType: 1,
   shopName: 2,
   state: 2,
@@ -74,6 +75,7 @@ export function SignupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [businessType, setBusinessType] = useState<BusinessType | "">("");
   const [shopName, setShopName] = useState("");
   const [selectedState, setSelectedState] = useState("");
@@ -96,9 +98,10 @@ export function SignupForm() {
   const isEmailValid = /^\S+@\S+\.\S+$/.test(email);
   const isPasswordValid =
     password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
   const stepValid =
     step === 0
-      ? name.trim().length >= 2 && isEmailValid && isPasswordValid
+      ? name.trim().length >= 2 && isEmailValid && isPasswordValid && passwordsMatch
       : step === 1
         ? businessType !== ""
         : step === 2
@@ -181,6 +184,24 @@ export function SignupForm() {
           ) : (
             <p className="text-muted-foreground text-xs">At least 8 characters, with a letter and a number.</p>
           )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="confirmPassword">Re-enter password</Label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            placeholder="Re-enter password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            aria-invalid={confirmPassword.length > 0 && !passwordsMatch}
+            required
+          />
+          {state?.errors?.confirmPassword ? (
+            <p className="text-destructive text-sm">{state.errors.confirmPassword[0]}</p>
+          ) : confirmPassword.length > 0 && !passwordsMatch ? (
+            <p className="text-destructive text-sm">Passwords don&apos;t match.</p>
+          ) : null}
         </div>
       </div>
 
