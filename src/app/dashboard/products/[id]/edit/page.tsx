@@ -11,13 +11,21 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
-  const [product, tenant, categories] = await Promise.all([
+  const [product, tenant, categories, existingProducts] = await Promise.all([
     db.product.findUnique({ where: { id } }),
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { businessType: true } }),
     db.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.product.findMany({ select: { tyreSize: true, tyreBrand: true } }),
   ]);
 
   if (!product) notFound();
+
+  const existingSizes = Array.from(
+    new Set(existingProducts.map((p) => p.tyreSize).filter((s): s is string => !!s && s !== product.tyreSize))
+  ).sort();
+  const existingBrands = Array.from(
+    new Set(existingProducts.map((p) => p.tyreBrand).filter((b): b is string => !!b && b !== product.tyreBrand))
+  ).sort();
 
   return (
     <div className="flex flex-col gap-6">
@@ -26,6 +34,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <ProductForm
         action={updateProduct.bind(null, product.id)}
         categories={categories}
+        existingSizes={existingSizes}
+        existingBrands={existingBrands}
         defaultValues={{
           name: product.name,
           hsnCode: product.hsnCode,

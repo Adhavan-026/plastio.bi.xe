@@ -13,7 +13,7 @@ export default async function NewSalesInvoicePage() {
   const { tenantId, role } = await getTenantContext();
   const db = await getTenantDb();
 
-  const [tenant, nextNumber, products, parties] = await Promise.all([
+  const [tenant, nextNumber, products, parties, categories] = await Promise.all([
     prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
       select: { businessType: true, state: true, allowInvoiceEdit: true },
@@ -30,6 +30,8 @@ export default async function NewSalesInvoicePage() {
         purchasePrice: true,
         stockQty: true,
         category: true,
+        categoryId: true,
+        tyreSize: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -38,6 +40,7 @@ export default async function NewSalesInvoicePage() {
       select: { id: true, name: true, state: true },
       orderBy: { name: "asc" },
     }),
+    db.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   let batchesByProduct: Record<string, BatchOption[]> | undefined;
@@ -78,6 +81,8 @@ export default async function NewSalesInvoicePage() {
           purchasePrice: p.purchasePrice.toString(),
           stockQty: p.stockQty.toString(),
           category: p.category,
+          categoryId: p.categoryId,
+          tyreSize: p.tyreSize,
         }))}
         parties={parties}
         partyLabel="Customer"
@@ -86,6 +91,7 @@ export default async function NewSalesInvoicePage() {
         batchesByProduct={batchesByProduct}
         showTyreFields={tenant.businessType === "TYRE"}
         isTyreTenant={tenant.businessType === "TYRE"}
+        categories={categories}
         draftKey="sales"
         tenantState={tenant.state}
         invoiceNumberField={{

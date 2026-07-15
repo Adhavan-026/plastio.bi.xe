@@ -18,6 +18,11 @@ import type { ProductFormState } from "@/lib/validations/product";
 type ProductFormProps = {
   action: (state: ProductFormState, formData: FormData) => Promise<ProductFormState>;
   categories: { id: string; name: string }[];
+  /** Sizes/brands already used on other products, offered as suggestions
+   * (not a strict list — free text is still allowed) so the same size
+   * doesn't end up entered three different ways across the catalogue. */
+  existingSizes?: string[];
+  existingBrands?: string[];
   defaultValues?: {
     name: string;
     hsnCode: string | null;
@@ -41,6 +46,8 @@ type ProductFormProps = {
 export function ProductForm({
   action,
   categories: initialCategories,
+  existingSizes = [],
+  existingBrands = [],
   defaultValues,
   submitLabel,
   showTyreFields,
@@ -51,32 +58,21 @@ export function ProductForm({
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
+      <datalist id="tyre-size-suggestions">
+        {existingSizes.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
+      <datalist id="tyre-brand-suggestions">
+        {existingBrands.map((b) => (
+          <option key={b} value={b} />
+        ))}
+      </datalist>
+
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Product name</Label>
         <Input id="name" name="name" defaultValue={defaultValues?.name} required />
         {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="hsnCode">HSN code</Label>
-          <Input id="hsnCode" name="hsnCode" defaultValue={defaultValues?.hsnCode ?? ""} />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="unit">Unit</Label>
-          <Select name="unit" defaultValue={defaultValues?.unit ?? "PCS"}>
-            <SelectTrigger id="unit" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {UNITS.map((unit) => (
-                <SelectItem key={unit} value={unit}>
-                  {unit}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -107,8 +103,7 @@ export function ProductForm({
           />
         </div>
         <p className="text-muted-foreground text-xs">
-          Groups products on the products page (e.g. Tyre, Tube, Battery). Leave unset for
-          &ldquo;Other&rdquo;.
+          What kind of item this is (e.g. Tyre, Tube, Flap). Leave unset for &ldquo;Other&rdquo;.
         </p>
       </div>
 
@@ -135,6 +130,53 @@ export function ProductForm({
             <Input id="category" name="category" defaultValue={defaultValues?.category ?? ""} />
           </>
         )}
+      </div>
+
+      {showTyreFields && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="tyreSize">Size</Label>
+            <Input
+              id="tyreSize"
+              name="tyreSize"
+              list="tyre-size-suggestions"
+              placeholder="e.g. 145/80 R12"
+              defaultValue={defaultValues?.tyreSize ?? ""}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="tyreBrand">Model / Brand</Label>
+            <Input
+              id="tyreBrand"
+              name="tyreBrand"
+              list="tyre-brand-suggestions"
+              placeholder="e.g. CEAT Milaze X3"
+              defaultValue={defaultValues?.tyreBrand ?? ""}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="hsnCode">HSN code</Label>
+          <Input id="hsnCode" name="hsnCode" defaultValue={defaultValues?.hsnCode ?? ""} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="unit">Unit</Label>
+          <Select name="unit" defaultValue={defaultValues?.unit ?? "PCS"}>
+            <SelectTrigger id="unit" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {UNITS.map((unit) => (
+                <SelectItem key={unit} value={unit}>
+                  {unit}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -206,19 +248,6 @@ export function ProductForm({
 
       {showTyreFields && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="tyreBrand">Tyre brand</Label>
-            <Input id="tyreBrand" name="tyreBrand" defaultValue={defaultValues?.tyreBrand ?? ""} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="tyreSize">Tyre size</Label>
-            <Input
-              id="tyreSize"
-              name="tyreSize"
-              placeholder="e.g. 145/80 R12"
-              defaultValue={defaultValues?.tyreSize ?? ""}
-            />
-          </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="tyrePattern">Tread pattern</Label>
             <Input

@@ -39,7 +39,13 @@ type ProductOption = {
   stockQty: string;
   /** Tyre module: the vehicle this product fits (repurposed "category"). */
   category?: string | null;
+  /** Shop-defined product category (Tyre/Tube/Flap/...), for the item-search filter. */
+  categoryId?: string | null;
+  /** Tyre module: tyre/tube/flap size, for the item-search filter. */
+  tyreSize?: string | null;
 };
+
+export type CategoryOption = { id: string; name: string };
 
 type PartyOption = {
   id: string;
@@ -157,6 +163,7 @@ export function InvoiceForm({
   batchesByProduct,
   showTyreFields,
   isTyreTenant,
+  categories = [],
   draftKey,
   tenantState,
   invoiceNumberField,
@@ -176,6 +183,9 @@ export function InvoiceForm({
    * product's vehicle-fit categorization applies on the purchase screen too,
    * which never sets showTyreFields. Falls back to showTyreFields if omitted. */
   isTyreTenant?: boolean;
+  /** Tyre module: shop-defined product categories (Tyre/Tube/Flap/...), for
+   * the item-search Type/Vehicle/Size cascading filter. */
+  categories?: CategoryOption[];
   /** Distinguishes the localStorage draft between the sales and purchase screens. */
   draftKey: string;
   /** The shop's own state, for the live CGST/SGST vs IGST preview. */
@@ -321,6 +331,48 @@ export function InvoiceForm({
       })),
     [products, rateField]
   );
+
+  // Type → Vehicle type → Size cascading filter for the item-search box —
+  // narrows a big shop's catalogue down to just what matches, since a plain
+  // name search is slow when hundreds of near-identical SKUs only differ by
+  // size. Each level only lists values that actually have matching stock.
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [filterVehicleType, setFilterVehicleType] = useState("");
+  const [filterTyreSize, setFilterTyreSize] = useState("");
+
+  function onFilterCategoryChange(v: string) {
+    setFilterCategoryId(v);
+    setFilterVehicleType("");
+    setFilterTyreSize("");
+  }
+  function onFilterVehicleTypeChange(v: string) {
+    setFilterVehicleType(v);
+    setFilterTyreSize("");
+  }
+
+  const availableVehicleTypes = useMemo(() => {
+    const pool = filterCategoryId ? products.filter((p) => p.categoryId === filterCategoryId) : products;
+    const present = new Set(pool.map((p) => p.category).filter((c): c is string => !!c));
+    return VEHICLE_TYPES.filter((v) => present.has(v));
+  }, [products, filterCategoryId]);
+
+  const availableTyreSizes = useMemo(() => {
+    let pool = products;
+    if (filterCategoryId) pool = pool.filter((p) => p.categoryId === filterCategoryId);
+    if (filterVehicleType) pool = pool.filter((p) => p.category === filterVehicleType);
+    const sizes = new Set(pool.map((p) => p.tyreSize).filter((s): s is string => !!s));
+    return Array.from(sizes).sort();
+  }, [products, filterCategoryId, filterVehicleType]);
+
+  const filteredProductComboOptions: ComboboxOption[] = useMemo(() => {
+    if (!filterCategoryId && !filterVehicleType && !filterTyreSize) return productComboOptions;
+    let pool = products;
+    if (filterCategoryId) pool = pool.filter((p) => p.categoryId === filterCategoryId);
+    if (filterVehicleType) pool = pool.filter((p) => p.category === filterVehicleType);
+    if (filterTyreSize) pool = pool.filter((p) => p.tyreSize === filterTyreSize);
+    const ids = new Set(pool.map((p) => p.id));
+    return productComboOptions.filter((o) => ids.has(o.id));
+  }, [products, productComboOptions, filterCategoryId, filterVehicleType, filterTyreSize]);
 
   const totals = useMemo(
     () => computeTotals(rows, billDiscountPercent, interState),
@@ -674,16 +726,80 @@ export function InvoiceForm({
                 Undo
               </Button>
             </div>
+            {(isTyreTenant ?? showTyreFields) && categories.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 px-5 pt-4">
+                <Select
+                  value={filterCategoryId}
+                  onValueChange={(v) => onFilterCategoryChange(v as string)}
+                  items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filterVehicleType}
+                  onValueChange={(v) => onFilterVehicleTypeChange(v as string)}
+                  disabled={!filterCategoryId}
+                  items={Object.fromEntries(availableVehicleTypes.map((v) => [v, v]))}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Vehicle type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableVehicleTypes.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filterTyreSize}
+                  onValueChange={(v) => setFilterTyreSize(v as string)}
+                  disabled={!filterVehicleType}
+                  items={Object.fromEntries(availableTyreSizes.map((s) => [s, s]))}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTyreSizes.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {(filterCategoryId || filterVehicleType || filterTyreSize) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onFilterCategoryChange("")}
+                  >
+                    <X /> Clear
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-2 p-5 pb-0">
               <div className="border-input bg-secondary/30 focus-within:border-primary flex flex-1 items-center gap-2 rounded-lg border border-dashed px-3 py-1">
                 <Search className="text-muted-foreground size-4 shrink-0" />
                 <div className="flex-1">
                   <EntityCombobox
-                    items={productComboOptions}
+                    items={filteredProductComboOptions}
                     value={quickAddSelection}
                     onValueChange={onQuickAdd}
                     placeholder="Search or scan an item to add it..."
-                    emptyText="No products found."
+                    emptyText="No products match this type/vehicle/size."
                     className="border-none bg-transparent px-0 shadow-none focus-visible:ring-0"
                   />
                 </div>

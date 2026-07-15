@@ -23,7 +23,7 @@ type SaleRow = {
   quantity: number;
   buyingPrice: number;
   sellingPrice: number;
-  marginPercent: number;
+  profitAmount: number;
 };
 
 export default async function SalesReportPage({
@@ -57,21 +57,21 @@ export default async function SalesReportPage({
   const rows: SaleRow[] = items.map((item) => {
     const sellingPrice = Number(item.rate);
     const buyingPrice = item.product ? Number(item.product.purchasePrice) : 0;
-    const marginPercent = sellingPrice > 0 ? ((sellingPrice - buyingPrice) / sellingPrice) * 100 : 0;
+    const quantity = Number(item.quantity);
     return {
       date: item.invoice.invoiceDate.toISOString().slice(0, 10),
       customer: item.invoice.party?.name ?? "Walk-in",
       product: item.description,
-      quantity: Number(item.quantity),
+      quantity,
       buyingPrice,
       sellingPrice,
-      marginPercent,
+      profitAmount: (sellingPrice - buyingPrice) * quantity,
     };
   });
 
   const totalBuying = rows.reduce((sum, r) => sum + r.buyingPrice * r.quantity, 0);
   const totalSelling = rows.reduce((sum, r) => sum + r.sellingPrice * r.quantity, 0);
-  const overallMargin = totalSelling > 0 ? ((totalSelling - totalBuying) / totalSelling) * 100 : 0;
+  const totalProfit = totalSelling - totalBuying;
 
   const dailyByDate = new Map<string, { revenue: number; profit: number }>();
   for (const row of rows) {
@@ -101,7 +101,7 @@ export default async function SalesReportPage({
               { key: "quantity", label: "Quantity" },
               { key: "buyingPrice", label: "Buying price" },
               { key: "sellingPrice", label: "Selling price" },
-              { key: "marginPercent", label: "Profit margin %" },
+              { key: "profitAmount", label: "Profit (₹)" },
             ]}
           />
         </div>
@@ -113,8 +113,7 @@ export default async function SalesReportPage({
 
       <p className="text-muted-foreground text-xs">
         Buying price is each product&apos;s current purchase price (not the price at time of
-        sale). Margin % = (Selling &minus; Buying) &divide; Selling &times; 100, per unit —
-        quantity doesn&apos;t affect it.
+        sale). Profit = (Selling &minus; Buying) &times; Quantity for that line.
       </p>
 
       <Table>
@@ -126,7 +125,7 @@ export default async function SalesReportPage({
             <TableHead className="text-right">Qty</TableHead>
             <TableHead className="text-right">Buying price</TableHead>
             <TableHead className="text-right">Selling price</TableHead>
-            <TableHead className="text-right">Margin %</TableHead>
+            <TableHead className="text-right">Profit (₹)</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -146,9 +145,9 @@ export default async function SalesReportPage({
               <TableCell className="text-right tabular-nums">₹{row.buyingPrice.toFixed(2)}</TableCell>
               <TableCell className="text-right tabular-nums">₹{row.sellingPrice.toFixed(2)}</TableCell>
               <TableCell
-                className={`text-right tabular-nums font-medium ${row.marginPercent < 0 ? "text-destructive" : ""}`}
+                className={`text-right tabular-nums font-medium ${row.profitAmount < 0 ? "text-destructive" : ""}`}
               >
-                {row.marginPercent.toFixed(1)}%
+                ₹{row.profitAmount.toFixed(2)}
               </TableCell>
             </TableRow>
           ))}
@@ -161,7 +160,7 @@ export default async function SalesReportPage({
               </TableCell>
               <TableCell className="text-right font-medium">₹{totalBuying.toFixed(2)}</TableCell>
               <TableCell className="text-right font-medium">₹{totalSelling.toFixed(2)}</TableCell>
-              <TableCell className="text-right font-medium">{overallMargin.toFixed(1)}%</TableCell>
+              <TableCell className="text-right font-medium">₹{totalProfit.toFixed(2)}</TableCell>
             </TableRow>
           </TableFooter>
         )}

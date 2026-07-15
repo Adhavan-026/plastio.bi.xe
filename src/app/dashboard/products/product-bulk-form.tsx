@@ -57,9 +57,13 @@ function emptyRow(): ProductRow {
 export function ProductBulkForm({
   showTyreFields,
   categories: initialCategories,
+  existingSizes = [],
+  existingBrands = [],
 }: {
   showTyreFields?: boolean;
   categories: { id: string; name: string }[];
+  existingSizes?: string[];
+  existingBrands?: string[];
 }) {
   const [state, formAction, pending] = useActionState(createProducts, undefined);
   const [categories, setCategories] = useState(initialCategories);
@@ -118,6 +122,16 @@ export function ProductBulkForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="itemsJson" value={itemsJson} />
+      <datalist id="tyre-size-suggestions">
+        {existingSizes.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
+      <datalist id="tyre-brand-suggestions">
+        {existingBrands.map((b) => (
+          <option key={b} value={b} />
+        ))}
+      </datalist>
 
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">
@@ -160,29 +174,32 @@ export function ProductBulkForm({
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={`hsn-${row.key}`}>HSN code</Label>
-              <Input
-                id={`hsn-${row.key}`}
-                value={row.hsnCode}
-                onChange={(e) => updateRow(row.key, { hsnCode: e.target.value })}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={`unit-${row.key}`}>Unit</Label>
-              <Select value={row.unit} onValueChange={(v) => updateRow(row.key, { unit: v as string })}>
-                <SelectTrigger id={`unit-${row.key}`} className="w-full">
-                  <SelectValue />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`categoryId-${row.key}`}>Product category</Label>
+            <div className="flex items-center gap-2">
+              <Select
+                value={row.categoryId}
+                onValueChange={(v) => updateRow(row.key, { categoryId: v as string })}
+                items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
+              >
+                <SelectTrigger id={`categoryId-${row.key}`} className="w-full">
+                  <SelectValue placeholder="Other (uncategorized)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {UNITS.map((unit) => (
-                    <SelectItem key={unit} value={unit}>
-                      {unit}
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <AddCategoryDialog
+                triggerVariant="ghost"
+                onCreated={(c) => {
+                  setCategories((prev) => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)));
+                  updateRow(row.key, { categoryId: c.id });
+                }}
+              />
             </div>
           </div>
 
@@ -218,32 +235,54 @@ export function ProductBulkForm({
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`categoryId-${row.key}`}>Product category</Label>
-            <div className="flex items-center gap-2">
-              <Select
-                value={row.categoryId}
-                onValueChange={(v) => updateRow(row.key, { categoryId: v as string })}
-                items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
-              >
-                <SelectTrigger id={`categoryId-${row.key}`} className="w-full">
-                  <SelectValue placeholder="Other (uncategorized)" />
+          {showTyreFields && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor={`size-${row.key}`}>Size</Label>
+                <Input
+                  id={`size-${row.key}`}
+                  list="tyre-size-suggestions"
+                  placeholder="e.g. 145/80 R12"
+                  value={row.tyreSize}
+                  onChange={(e) => updateRow(row.key, { tyreSize: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor={`brand-${row.key}`}>Model / Brand</Label>
+                <Input
+                  id={`brand-${row.key}`}
+                  list="tyre-brand-suggestions"
+                  placeholder="e.g. CEAT Milaze X3"
+                  value={row.tyreBrand}
+                  onChange={(e) => updateRow(row.key, { tyreBrand: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`hsn-${row.key}`}>HSN code</Label>
+              <Input
+                id={`hsn-${row.key}`}
+                value={row.hsnCode}
+                onChange={(e) => updateRow(row.key, { hsnCode: e.target.value })}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`unit-${row.key}`}>Unit</Label>
+              <Select value={row.unit} onValueChange={(v) => updateRow(row.key, { unit: v as string })}>
+                <SelectTrigger id={`unit-${row.key}`} className="w-full">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
+                  {UNITS.map((unit) => (
+                    <SelectItem key={unit} value={unit}>
+                      {unit}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <AddCategoryDialog
-                triggerVariant="ghost"
-                onCreated={(c) => {
-                  setCategories((prev) => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)));
-                  updateRow(row.key, { categoryId: c.id });
-                }}
-              />
             </div>
           </div>
 
@@ -305,23 +344,6 @@ export function ProductBulkForm({
 
           {showTyreFields && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor={`brand-${row.key}`}>Tyre brand</Label>
-                <Input
-                  id={`brand-${row.key}`}
-                  value={row.tyreBrand}
-                  onChange={(e) => updateRow(row.key, { tyreBrand: e.target.value })}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor={`size-${row.key}`}>Tyre size</Label>
-                <Input
-                  id={`size-${row.key}`}
-                  placeholder="e.g. 145/80 R12"
-                  value={row.tyreSize}
-                  onChange={(e) => updateRow(row.key, { tyreSize: e.target.value })}
-                />
-              </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor={`pattern-${row.key}`}>Tread pattern</Label>
                 <Input

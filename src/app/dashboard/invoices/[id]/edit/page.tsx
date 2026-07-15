@@ -43,7 +43,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
   const isPurchase = invoice.type === "PURCHASE";
   const partyTypes = isPurchase ? (["SUPPLIER", "BOTH"] as const) : (["CUSTOMER", "BOTH"] as const);
 
-  const [products, parties] = await Promise.all([
+  const [products, parties, categories] = await Promise.all([
     db.product.findMany({
       where: { isActive: true },
       select: {
@@ -55,6 +55,8 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
         purchasePrice: true,
         stockQty: true,
         category: true,
+        categoryId: true,
+        tyreSize: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -63,6 +65,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
       select: { id: true, name: true, state: true },
       orderBy: { name: "asc" },
     }),
+    db.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   let batchesByProduct: Record<string, BatchOption[]> | undefined;
@@ -128,6 +131,8 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
           purchasePrice: p.purchasePrice.toString(),
           stockQty: p.stockQty.toString(),
           category: p.category,
+          categoryId: p.categoryId,
+          tyreSize: p.tyreSize,
         }))}
         parties={parties}
         partyLabel={isPurchase ? "Supplier" : "Customer"}
@@ -136,6 +141,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
         batchesByProduct={batchesByProduct}
         showTyreFields={!isPurchase && tenant.businessType === "TYRE"}
         isTyreTenant={tenant.businessType === "TYRE"}
+        categories={categories}
         draftKey={`edit-${invoice.id}`}
         tenantState={tenant.state}
         invoiceNumberField={
