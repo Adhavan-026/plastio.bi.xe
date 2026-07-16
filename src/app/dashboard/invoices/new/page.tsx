@@ -32,6 +32,7 @@ export default async function NewSalesInvoicePage() {
         category: true,
         categoryId: true,
         tyreSize: true,
+        tyreBrand: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -83,6 +84,7 @@ export default async function NewSalesInvoicePage() {
           category: p.category,
           categoryId: p.categoryId,
           tyreSize: p.tyreSize,
+          tyreBrand: p.tyreBrand,
         }))}
         parties={parties}
         partyLabel="Customer"

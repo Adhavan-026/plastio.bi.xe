@@ -32,11 +32,14 @@ export async function quickCreateProduct(
   }
 
   const db = await getTenantDb();
-  const { category, ...rest } = validatedFields.data;
+  const { category, categoryId, tyreSize, tyreBrand, ...rest } = validatedFields.data;
   const product = await db.product.create({
     data: {
       ...rest,
       category: category || null,
+      categoryId: categoryId || null,
+      tyreSize: tyreSize || null,
+      tyreBrand: tyreBrand || null,
       stockQty: 0,
       lowStockAlert: 0,
       tenantId: context.tenantId,
@@ -54,6 +57,9 @@ export async function quickCreateProduct(
       purchasePrice: product.purchasePrice.toString(),
       stockQty: product.stockQty.toString(),
       category: product.category,
+      categoryId: product.categoryId,
+      tyreSize: product.tyreSize,
+      tyreBrand: product.tyreBrand,
     },
   };
 }

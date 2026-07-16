@@ -43,6 +43,8 @@ type ProductOption = {
   categoryId?: string | null;
   /** Tyre module: tyre/tube/flap size, for the item-search filter. */
   tyreSize?: string | null;
+  /** Tyre module: brand/model, for the quick-add dialog's suggestions. */
+  tyreBrand?: string | null;
 };
 
 export type CategoryOption = { id: string; name: string };
@@ -373,6 +375,18 @@ export function InvoiceForm({
     const ids = new Set(pool.map((p) => p.id));
     return productComboOptions.filter((o) => ids.has(o.id));
   }, [products, productComboOptions, filterCategoryId, filterVehicleType, filterTyreSize]);
+
+  // Suggestions for the quick-add dialog's Size/Model fields, drawn from
+  // the shop's existing catalogue so the same size doesn't end up entered
+  // several different ways across products.
+  const existingSizes = useMemo(
+    () => Array.from(new Set(products.map((p) => p.tyreSize).filter((s): s is string => !!s))).sort(),
+    [products]
+  );
+  const existingBrands = useMemo(
+    () => Array.from(new Set(products.map((p) => p.tyreBrand).filter((b): b is string => !!b))).sort(),
+    [products]
+  );
 
   const totals = useMemo(
     () => computeTotals(rows, billDiscountPercent, interState),
@@ -806,6 +820,9 @@ export function InvoiceForm({
               </div>
               <QuickAddProductDialog
                 showTyreFields={isTyreTenant ?? showTyreFields}
+                categories={categories}
+                existingSizes={existingSizes}
+                existingBrands={existingBrands}
                 onCreated={onQuickProductCreated}
               />
             </div>

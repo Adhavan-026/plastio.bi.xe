@@ -90,6 +90,9 @@ export const QuickProductSchema = z.object({
   purchasePrice: z.coerce.number().min(0, { error: "Purchase price can't be negative." }),
   sellingPrice: z.coerce.number().min(0, { error: "Selling price can't be negative." }),
   category: z.string().trim().optional().or(z.literal("")),
+  categoryId: z.string().trim().optional().or(z.literal("")),
+  tyreSize: z.string().trim().optional().or(z.literal("")),
+  tyreBrand: z.string().trim().optional().or(z.literal("")),
 });
 
 export type QuickProductState =
@@ -105,6 +108,9 @@ export type QuickProductState =
         purchasePrice: string;
         stockQty: string;
         category: string | null;
+        categoryId: string | null;
+        tyreSize: string | null;
+        tyreBrand: string | null;
       };
     }
   | undefined;

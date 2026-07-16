@@ -32,6 +32,7 @@ export default async function NewPurchaseInvoicePage() {
         category: true,
         categoryId: true,
         tyreSize: true,
+        tyreBrand: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -65,6 +66,7 @@ export default async function NewPurchaseInvoicePage() {
           category: p.category,
           categoryId: p.categoryId,
           tyreSize: p.tyreSize,
+          tyreBrand: p.tyreBrand,
         }))}
         parties={parties}
         partyLabel="Supplier"

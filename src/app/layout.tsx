@@ -47,10 +47,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: FONT_SIZE_INIT_SCRIPT }} />
-      </head>
       <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: FONT_SIZE_INIT_SCRIPT }} />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <FontSizeProvider>
             <TooltipProvider>

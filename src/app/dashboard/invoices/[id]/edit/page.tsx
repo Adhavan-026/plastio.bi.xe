@@ -57,6 +57,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
         category: true,
         categoryId: true,
         tyreSize: true,
+        tyreBrand: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -133,6 +134,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
           category: p.category,
           categoryId: p.categoryId,
           tyreSize: p.tyreSize,
+          tyreBrand: p.tyreBrand,
         }))}
         parties={parties}
         partyLabel={isPurchase ? "Supplier" : "Customer"}

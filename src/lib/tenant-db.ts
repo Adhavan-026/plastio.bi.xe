@@ -30,6 +30,20 @@ export type TenantContext = {
 export async function requireSession() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+
+  // A session can outlive its tenant (account deleted, or a stale browser
+  // session from before). Without this check, every downstream
+  // `tenant.findUniqueOrThrow` call throws an unhandled 500 instead of
+  // just bouncing back to login. Can't call signOut() here to also clear
+  // the cookie — this runs during render, and cookie writes are only
+  // allowed from a Server Action or Route Handler. The stale cookie gets
+  // overwritten on the next successful login regardless.
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: session.user.tenantId },
+    select: { id: true },
+  });
+  if (!tenant) redirect("/login");
+
   return session;
 }
 
