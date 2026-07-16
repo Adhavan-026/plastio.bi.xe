@@ -4,6 +4,7 @@ import { DateRangeForm } from "@/components/reports/date-range-form";
 import { ExportCsvButton } from "@/components/reports/export-csv-button";
 import { PrintReportButton } from "@/components/reports/print-report-button";
 import { SalesTrendChart } from "@/components/reports/sales-trend-chart";
+import { SaleDetailDialog, type SaleItemDetail } from "@/components/reports/sale-detail-dialog";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
 import {
@@ -17,6 +18,8 @@ import {
 } from "@/components/ui/table";
 
 type SaleRow = {
+  invoiceId: string;
+  invoiceNumber: string;
   date: string;
   customer: string;
   product: string;
@@ -45,6 +48,7 @@ export default async function SalesReportPage({
       product: { select: { purchasePrice: true } },
       invoice: {
         select: {
+          id: true,
           invoiceDate: true,
           invoiceNumber: true,
           party: { select: { name: true } },
@@ -59,6 +63,8 @@ export default async function SalesReportPage({
     const buyingPrice = item.product ? Number(item.product.purchasePrice) : 0;
     const quantity = Number(item.quantity);
     return {
+      invoiceId: item.invoice.id,
+      invoiceNumber: item.invoice.invoiceNumber,
       date: item.invoice.invoiceDate.toISOString().slice(0, 10),
       customer: item.invoice.party?.name ?? "Walk-in",
       product: item.description,
@@ -68,6 +74,30 @@ export default async function SalesReportPage({
       profitAmount: (sellingPrice - buyingPrice) * quantity,
     };
   });
+
+  // Grouped by bill so the "View" popup can show every product sold on the
+  // same invoice together, not just the one line the button was clicked from.
+  const invoiceGroups = new Map<
+    string,
+    { invoiceNumber: string; date: string; customer: string; items: SaleItemDetail[] }
+  >();
+  for (const row of rows) {
+    const group = invoiceGroups.get(row.invoiceId) ?? {
+      invoiceNumber: row.invoiceNumber,
+      date: row.date,
+      customer: row.customer,
+      items: [],
+    };
+    group.items.push({
+      product: row.product,
+      quantity: row.quantity,
+      buyingPrice: row.buyingPrice,
+      sellingPrice: row.sellingPrice,
+      income: row.sellingPrice * row.quantity,
+      profitAmount: row.profitAmount,
+    });
+    invoiceGroups.set(row.invoiceId, group);
+  }
 
   const totalBuying = rows.reduce((sum, r) => sum + r.buyingPrice * r.quantity, 0);
   const totalSelling = rows.reduce((sum, r) => sum + r.sellingPrice * r.quantity, 0);
@@ -126,12 +156,13 @@ export default async function SalesReportPage({
             <TableHead className="text-right">Buying price</TableHead>
             <TableHead className="text-right">Selling price</TableHead>
             <TableHead className="text-right">Profit (₹)</TableHead>
+            <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground text-center">
+              <TableCell colSpan={8} className="text-muted-foreground text-center">
                 No sales in this range.
               </TableCell>
             </TableRow>
@@ -149,6 +180,14 @@ export default async function SalesReportPage({
               >
                 ₹{row.profitAmount.toFixed(2)}
               </TableCell>
+              <TableCell>
+                <SaleDetailDialog
+                  invoiceNumber={row.invoiceNumber}
+                  date={row.date}
+                  customer={row.customer}
+                  items={invoiceGroups.get(row.invoiceId)!.items}
+                />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -161,6 +200,7 @@ export default async function SalesReportPage({
               <TableCell className="text-right font-medium">₹{totalBuying.toFixed(2)}</TableCell>
               <TableCell className="text-right font-medium">₹{totalSelling.toFixed(2)}</TableCell>
               <TableCell className="text-right font-medium">₹{totalProfit.toFixed(2)}</TableCell>
+              <TableCell />
             </TableRow>
           </TableFooter>
         )}
