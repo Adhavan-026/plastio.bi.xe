@@ -41,10 +41,10 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
-  if (isLoggedIn && (pathname === "/login" || pathname === "/signup")) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
-  }
-
+  // Deliberately no "already logged in -> bounce to /dashboard" redirect
+  // here: /login must always show the login form when visited directly
+  // (e.g. the landing page's "Get Started" button), never silently skip
+  // past it because of an existing session.
   return NextResponse.next();
 }
 

@@ -23,7 +23,14 @@ export function LoginForm() {
     <form action={action} className="flex flex-col gap-4" autoComplete="off">
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" placeholder="you@shop.com" required />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="you@shop.com"
+          autoComplete="off"
+          required
+        />
         {state?.errors?.email && (
           <p className="text-sm text-destructive">{state.errors.email[0]}</p>
         )}
@@ -36,7 +43,13 @@ export function LoginForm() {
             Forgot password?
           </Link>
         </div>
-        <Input id="password" name="password" type="password" required />
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          required
+        />
         {state?.errors?.password && (
           <p className="text-sm text-destructive">{state.errors.password[0]}</p>
         )}
