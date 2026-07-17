@@ -12,6 +12,7 @@ import {
   ALargeSmall,
   Sprout,
   Disc3,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
@@ -196,7 +197,25 @@ function DashboardMockup() {
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-white/80 px-6 py-4 backdrop-blur-sm sm:px-10">
+      {/* Splash — full-bleed brand banner, the first thing a visitor sees. */}
+      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-linear-to-br from-[#0B3B2E] via-[#0F5D3E] to-[#10B77F] px-6 text-center">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.10),transparent_60%)]" />
+        <span className="font-heading relative text-6xl leading-none font-bold tracking-tight text-white sm:text-7xl md:text-8xl">
+          Click One
+        </span>
+        <p className="relative mt-6 text-xs font-semibold tracking-[0.3em] text-white/60 uppercase sm:text-sm">
+          GST Billing, Simplified
+        </p>
+        <a
+          href="#top"
+          className="absolute bottom-8 text-white/50 transition-colors hover:text-white/80"
+          aria-label="Scroll down"
+        >
+          <ChevronDown className="size-7 animate-bounce" />
+        </a>
+      </section>
+
+      <header id="top" className="sticky top-0 z-20 flex items-center justify-between border-b bg-white/80 px-6 py-4 backdrop-blur-sm sm:px-10">
         <Logo className="h-7 w-auto" />
         <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
           <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
