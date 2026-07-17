@@ -1,4 +1,4 @@
-// Prisma schema for the Universal Billing System
+// Prisma schema for Click One
 // Multi-tenant base pattern: every business-data table carries a tenantId
 // and must be scoped through src/lib/tenant-db.ts — never queried directly
 // with a client-supplied id.

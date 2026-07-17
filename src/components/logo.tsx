@@ -1,29 +1,30 @@
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 // Full wordmark — wide lockup, for headers/panels with room to breathe.
 export function Logo({ className }: { className?: string }) {
   return (
-    <Image
-      src="/logo.png"
-      alt="Plastio.xe"
-      width={1445}
-      height={311}
-      priority
-      className={cn("h-8 w-auto object-contain", className)}
-    />
+    <span
+      className={cn(
+        "font-heading inline-flex items-center gap-0.5 text-xl leading-none font-bold tracking-tight whitespace-nowrap",
+        className
+      )}
+    >
+      <span className="text-primary">Click</span>
+      <span className="text-foreground">One</span>
+    </span>
   );
 }
 
-// Icon-only mark — square crop, for tight spaces (collapsed sidebar, avatars).
+// Icon-only mark — square badge, for tight spaces (collapsed sidebar, avatars).
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <Image
-      src="/logo-icon.png"
-      alt="Plastio.xe"
-      width={305}
-      height={311}
-      className={cn("size-8 object-contain", className)}
-    />
+    <span
+      className={cn(
+        "bg-primary text-primary-foreground font-heading inline-flex items-center justify-center rounded-lg text-sm font-bold",
+        className
+      )}
+    >
+      C1
+    </span>
   );
 }

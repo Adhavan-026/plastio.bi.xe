@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <p className="relative text-xs text-white/60">
-          &copy; {new Date().getFullYear()} Plastio.xe. Built for Indian retail.
+          &copy; {new Date().getFullYear()} Click One. Built for Indian retail.
         </p>
       </div>
 

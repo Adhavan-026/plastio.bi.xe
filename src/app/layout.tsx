@@ -32,7 +32,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Universal Billing System",
+  title: "Click One",
   description: "Multi-tenant billing for agro and tyre shops.",
 };
 

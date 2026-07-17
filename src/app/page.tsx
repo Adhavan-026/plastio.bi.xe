@@ -140,7 +140,7 @@ function DashboardMockup() {
         <span className="size-2.5 rounded-full bg-neutral-300" />
         <span className="size-2.5 rounded-full bg-neutral-300" />
         <span className="text-muted-foreground ml-2 rounded-md bg-white px-2 py-0.5 text-[10px] ring-1 ring-neutral-200">
-          app.plastio.xe/dashboard
+          app.clickone.in/dashboard
         </span>
       </div>
       <div className="flex">
@@ -431,7 +431,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <Logo className="h-5 w-auto" />
           <p className="text-muted-foreground text-xs">
-            &copy; {new Date().getFullYear()} Plastio.xe. Built for Indian retail.
+            &copy; {new Date().getFullYear()} Click One. Built for Indian retail.
           </p>
         </div>
       </footer>

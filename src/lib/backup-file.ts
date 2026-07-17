@@ -98,7 +98,7 @@ export async function saveBackupToDevice(shopName: string): Promise<BackupSaveRe
       try {
         handle = await window.showSaveFilePicker({
           suggestedName: fileName,
-          types: [{ description: "Plastio backup", accept: { "application/json": [".json"] } }],
+          types: [{ description: "Click One backup", accept: { "application/json": [".json"] } }],
         });
         await storeHandle(slug, handle);
       } catch (error) {

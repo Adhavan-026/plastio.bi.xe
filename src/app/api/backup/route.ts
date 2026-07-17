@@ -38,7 +38,7 @@ export async function GET() {
     ]);
 
   const backup = {
-    app: "Plastio.xe",
+    app: "Click One",
     format: 1,
     exportedAt: new Date().toISOString(),
     shop: tenant,

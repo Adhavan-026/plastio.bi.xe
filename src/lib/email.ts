@@ -27,7 +27,7 @@ export async function sendEmail({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "Plastio.xe <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM ?? "Click One <onboarding@resend.dev>",
       to,
       subject,
       html,

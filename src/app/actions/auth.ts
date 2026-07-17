@@ -98,8 +98,8 @@ export async function signup(
   // Best-effort — a broken email provider shouldn't block account creation.
   await sendEmail({
     to: email,
-    subject: "Verify your email — Plastio.xe",
-    html: `<p>Hi ${name},</p><p>Welcome to Plastio.xe. Please verify your email address:</p><p><a href="${verifyEmailLink(emailVerifyToken)}">Verify email</a></p><p>This link expires in 24 hours.</p>`,
+    subject: "Verify your email — Click One",
+    html: `<p>Hi ${name},</p><p>Welcome to Click One. Please verify your email address:</p><p><a href="${verifyEmailLink(emailVerifyToken)}">Verify email</a></p><p>This link expires in 24 hours.</p>`,
   }).catch(() => {});
 
   try {
@@ -175,7 +175,7 @@ export async function requestPasswordReset(
     });
     await sendEmail({
       to: email,
-      subject: "Reset your password — Plastio.xe",
+      subject: "Reset your password — Click One",
       html: `<p>Hi ${user.name},</p><p>Reset your password:</p><p><a href="${resetPasswordLink(passwordResetToken)}">Reset password</a></p><p>This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
     }).catch(() => {});
   }
@@ -241,7 +241,7 @@ export async function resendVerificationEmail(): Promise<{ ok: boolean; message:
 
   await sendEmail({
     to: user.email,
-    subject: "Verify your email — Plastio.xe",
+    subject: "Verify your email — Click One",
     html: `<p>Hi ${user.name},</p><p>Verify your email address:</p><p><a href="${verifyEmailLink(emailVerifyToken)}">Verify email</a></p><p>This link expires in 24 hours.</p>`,
   }).catch(() => {});
 
