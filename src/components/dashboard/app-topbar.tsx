@@ -97,6 +97,10 @@ export function AppTopBar({
         );
       }
       markLoggingOut();
+      // Also prime this here (not just on the login page) so the browser
+      // doesn't try to silently resubmit this saved credential the moment
+      // the post-logout redirect lands on /login.
+      navigator.credentials?.preventSilentAccess?.().catch(() => {});
       logoutFormRef.current?.requestSubmit();
     } finally {
       setBackingUp(false);

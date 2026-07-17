@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { login } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,15 @@ import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined);
+
+  // Chrome's "Auto sign-in" can silently resubmit a saved email/password on
+  // page load if there's exactly one saved credential for this origin. If
+  // that account no longer exists (e.g. the shop's data was reset), this
+  // just keeps retrying stale credentials instead of letting the user type
+  // their current ones — tell the browser to always require a manual login.
+  useEffect(() => {
+    navigator.credentials?.preventSilentAccess?.().catch(() => {});
+  }, []);
 
   return (
     <form action={action} className="flex flex-col gap-4">
