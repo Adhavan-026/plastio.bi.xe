@@ -5,7 +5,11 @@ import { prisma } from "@/lib/prisma";
 import type { Role } from "@/generated/prisma/enums";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { strategy: "jwt" },
+  // Fixed 24h window from login, not sliding — this app never calls
+  // useSession()/SessionProvider and proxy.ts's auth() only decodes the
+  // JWT, neither refreshes the cookie's expiry, so this genuinely forces
+  // a fresh login once a day regardless of activity in between.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 },
   pages: { signIn: "/login" },
   providers: [
     Credentials({

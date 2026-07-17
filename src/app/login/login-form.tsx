@@ -20,7 +20,7 @@ export function LoginForm() {
   }, []);
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} className="flex flex-col gap-4" autoComplete="off">
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" placeholder="you@shop.com" required />
