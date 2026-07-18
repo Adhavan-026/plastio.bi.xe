@@ -197,19 +197,57 @@ function DashboardMockup() {
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      {/* Splash — full-bleed brand banner, the first thing a visitor sees. */}
-      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-linear-to-br from-[#0B3B2E] via-[#0F5D3E] to-[#10B77F] px-6 text-center">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.10),transparent_60%)]" />
-        <LogoMark className="relative mb-6 size-20 sm:size-24" />
-        <span className="font-heading relative text-6xl leading-none font-bold tracking-tight text-white sm:text-7xl md:text-8xl">
+      {/* Splash — full-bleed brand banner, the first thing a visitor sees.
+          Background is an original SVG mountain/forest silhouette (hand-built,
+          not a licensed photo) so it scales crisply at any size. */}
+      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-[#0c1c30] px-6 text-center">
+        <svg
+          viewBox="0 0 1440 600"
+          preserveAspectRatio="xMidYMax slice"
+          className="absolute inset-0 h-full w-full"
+          aria-hidden="true"
+        >
+          <defs>
+            <linearGradient id="splash-sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#0c1c30" />
+              <stop offset="55%" stopColor="#21446a" />
+              <stop offset="100%" stopColor="#6a8faf" />
+            </linearGradient>
+          </defs>
+          <rect width="1440" height="600" fill="url(#splash-sky)" />
+          <path
+            d="M0,600 L0,288 L60,271 L120,266 L180,253 L240,231 L300,247 L360,253 L420,258 L480,277 L540,261 L600,257 L660,264 L720,255 L780,274 L840,280 L900,263 L960,263 L1020,241 L1080,232 L1140,251 L1200,252 L1260,271 L1320,282 L1380,263 L1440,266 L1440,600 Z"
+            fill="#7c96b3"
+          />
+          <path
+            d="M0,600 L0,300 L60,297 L120,274 L180,268 L240,290 L300,274 L360,269 L420,256 L480,210 L540,216 L600,245 L660,264 L720,306 L780,301 L840,289 L900,289 L960,262 L1020,277 L1080,301 L1140,301 L1200,324 L1260,313 L1320,293 L1380,306 L1440,297 L1440,600 Z"
+            fill="#5c7797"
+          />
+          <path
+            d="M0,600 L0,342 L60,327 L120,333 L180,358 L240,348 L300,353 L360,351 L420,333 L480,354 L540,361 L600,360 L660,369 L720,334 L780,307 L840,293 L900,263 L960,299 L1020,328 L1080,333 L1140,356 L1200,347 L1260,340 L1320,359 L1380,353 L1440,364 L1440,600 Z"
+            fill="#405973"
+          />
+          <path
+            d="M0,600 L0,394 L60,411 L120,417 L180,402 L240,409 L300,400 L360,401 L420,427 L480,425 L540,429 L600,427 L660,396 L720,395 L780,393 L840,389 L900,411 L960,403 L1020,391 L1080,389 L1140,362 L1200,378 L1260,402 L1320,403 L1380,420 L1440,410 L1440,600 Z"
+            fill="#283c52"
+          />
+          <path
+            d="M0,600 L0,600 L29,543 L55,600 L74,508 L98,600 L124,476 L146,600 L170,514 L189,600 L216,499 L239,600 L255,536 L270,600 L290,401 L314,600 L345,399 L369,600 L388,493 L411,600 L432,502 L458,600 L472,527 L492,600 L515,482 L543,600 L569,529 L595,600 L616,536 L644,600 L667,533 L690,600 L707,530 L727,600 L756,513 L780,600 L797,444 L816,600 L830,514 L850,600 L865,526 L884,600 L899,488 L920,600 L937,518 L962,600 L978,535 L994,600 L1019,523 L1036,600 L1056,536 L1073,600 L1098,541 L1124,600 L1144,508 L1164,600 L1182,476 L1198,600 L1218,409 L1236,600 L1253,516 L1270,600 L1282,515 L1301,600 L1319,414 L1345,600 L1371,499 L1401,600 L1423,509 L1440,600 L1440,600 Z"
+            fill="#0a1420"
+          />
+        </svg>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_60%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/10 to-black/45" />
+        <LogoMark className="relative mb-6 size-20 drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)] sm:size-24" />
+        <span className="font-heading relative text-6xl leading-none font-bold tracking-tight text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)] sm:text-7xl md:text-8xl">
           Click One
         </span>
-        <p className="relative mt-6 text-xs font-semibold tracking-[0.3em] text-white/60 uppercase sm:text-sm">
+        <p className="relative mt-6 text-xs font-semibold tracking-[0.3em] text-white/70 uppercase sm:text-sm">
           GST Billing, Simplified
         </p>
         <a
           href="#top"
-          className="absolute bottom-8 text-white/50 transition-colors hover:text-white/80"
+          className="absolute bottom-8 text-white/60 transition-colors hover:text-white/90"
           aria-label="Scroll down"
         >
           <ChevronDown className="size-7 animate-bounce" />
