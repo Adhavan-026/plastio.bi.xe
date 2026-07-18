@@ -24,12 +24,12 @@ const RANGE_TABS = [
 ] as const;
 
 const KPI_TONE = {
-  blue: "bg-success",
-  rose: "bg-destructive",
-  amber: "bg-warning",
+  blue: "bg-chart-2",
+  rose: "bg-chart-5",
+  amber: "bg-chart-4",
   purple: "bg-chart-3",
-  emerald: "bg-primary",
-  teal: "bg-success",
+  emerald: "bg-chart-1",
+  teal: "bg-chart-2",
 } as const;
 
 function formatInr(v: number): string {

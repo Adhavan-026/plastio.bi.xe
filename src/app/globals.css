@@ -62,6 +62,8 @@
  * palette: biscay = primary/brand, steel blue = success/positive, cornflower
  * = accent/hover, and darkened variants of double colonial white / rose bud
  * carry warning/destructive (kept legible as text on light tinted badges).
+ * The chart-1..5 ramp uses all 5 hues at their true (undarkened) lightness
+ * since chart fills never carry text on top of them.
  */
 :root {
   --background: oklch(0.976 0.006 255);
@@ -89,8 +91,8 @@
   --chart-1: oklch(0.363 0.109 263);
   --chart-2: oklch(0.579 0.11 255);
   --chart-3: oklch(0.754 0.082 255);
-  --chart-4: oklch(0.55 0.13 97);
-  --chart-5: oklch(0.58 0.19 20);
+  --chart-4: oklch(0.912 0.077 97);
+  --chart-5: oklch(0.794 0.103 20);
   --radius: 0.625rem;
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.22 0.035 263);

@@ -19,6 +19,17 @@ import { Logo } from "@/components/logo";
 
 const AUDIENCES = ["Agro & Fertilizer Shops", "Tyre & Auto Shops", "General Retail"];
 
+// Cycled across the feature icon badges below so all 5 Astro Novalite
+// swatches (biscay, steel blue, cornflower, double colonial white, rose
+// bud) show up at their true hue, not just the derived primary/accent.
+const FEATURE_TINTS = [
+  "bg-[#1e3a76]/10 text-[#1e3a76]",
+  "bg-[#4a7cba]/15 text-[#4a7cba]",
+  "bg-[#8cb2e3]/25 text-[#1e3a76]",
+  "bg-[#f0e3a8]/40 text-[#8a6d1f]",
+  "bg-[#f7a1a1]/25 text-[#b23a3a]",
+];
+
 const FEATURES = [
   {
     icon: ReceiptText,
@@ -159,8 +170,8 @@ function DashboardMockup() {
           <div className="grid grid-cols-3 gap-2">
             {[
               ["bg-primary", "₹1,01,641"],
-              ["bg-warning", "13"],
-              ["bg-destructive", "2"],
+              ["bg-chart-4", "13"],
+              ["bg-chart-5", "2"],
             ].map(([tone, value]) => (
               <div key={value} className="rounded-lg border p-2">
                 <span className={`block h-1 w-5 rounded-full ${tone}`} />
@@ -348,12 +359,14 @@ export default function Home() {
             </h2>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((feature) => (
+            {FEATURES.map((feature, i) => (
               <div
                 key={feature.title}
                 className="bg-card flex flex-col gap-3 rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md"
               >
-                <span className="bg-accent text-accent-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
+                <span
+                  className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${FEATURE_TINTS[i % FEATURE_TINTS.length]}`}
+                >
                   <feature.icon className="size-4.5" />
                 </span>
                 <div>
