@@ -15,7 +15,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/logo";
+import { Logo, LogoMark } from "@/components/logo";
 
 const AUDIENCES = ["Agro & Fertilizer Shops", "Tyre & Auto Shops", "General Retail"];
 
@@ -200,6 +200,7 @@ export default function Home() {
       {/* Splash — full-bleed brand banner, the first thing a visitor sees. */}
       <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-linear-to-br from-[#0B3B2E] via-[#0F5D3E] to-[#10B77F] px-6 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.10),transparent_60%)]" />
+        <LogoMark className="relative mb-6 size-20 sm:size-24" />
         <span className="font-heading relative text-6xl leading-none font-bold tracking-tight text-white sm:text-7xl md:text-8xl">
           Click One
         </span>
