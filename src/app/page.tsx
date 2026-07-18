@@ -198,46 +198,60 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Splash — full-bleed brand banner, the first thing a visitor sees.
-          Background is an original SVG mountain/forest silhouette (hand-built,
-          not a licensed photo) so it scales crisply at any size. */}
-      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-[#0c1c30] px-6 text-center">
+          Background is an original SVG mountain scene (hand-built, not a
+          licensed photo) — soft bezier ridgelines with atmospheric blur on
+          the distant layers, so it scales crisply at any size. */}
+      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-[#0a1729] px-6 text-center">
         <svg
-          viewBox="0 0 1440 600"
+          viewBox="0 0 1440 620"
           preserveAspectRatio="xMidYMax slice"
           className="absolute inset-0 h-full w-full"
           aria-hidden="true"
         >
           <defs>
             <linearGradient id="splash-sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0c1c30" />
-              <stop offset="55%" stopColor="#21446a" />
-              <stop offset="100%" stopColor="#6a8faf" />
+              <stop offset="0%" stopColor="#0a1729" />
+              <stop offset="45%" stopColor="#1c3a5c" />
+              <stop offset="100%" stopColor="#5c85a8" />
             </linearGradient>
+            <filter id="haze-8" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="8" />
+            </filter>
+            <filter id="haze-5" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="5" />
+            </filter>
+            <filter id="haze-3" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" />
+            </filter>
           </defs>
-          <rect width="1440" height="600" fill="url(#splash-sky)" />
+          <rect width="1440" height="620" fill="url(#splash-sky)" />
           <path
-            d="M0,600 L0,288 L60,271 L120,266 L180,253 L240,231 L300,247 L360,253 L420,258 L480,277 L540,261 L600,257 L660,264 L720,255 L780,274 L840,280 L900,263 L960,263 L1020,241 L1080,232 L1140,251 L1200,252 L1260,271 L1320,282 L1380,263 L1440,266 L1440,600 Z"
-            fill="#7c96b3"
+            filter="url(#haze-8)"
+            d="M0,620 L0,171 C34.3,172.8 137.5,183.7 206,182 C274.5,180.3 342.5,165.5 411,161 C479.5,156.5 548.3,154.8 617,155 C685.7,155.2 754.3,164.2 823,162 C891.7,159.8 960.5,150.2 1029,142 C1097.5,133.8 1165.5,116.3 1234,113 C1302.5,109.7 1405.7,120.5 1440,122 L1440,620 Z"
+            fill="#4a6f94"
+            opacity="0.85"
           />
           <path
-            d="M0,600 L0,300 L60,297 L120,274 L180,268 L240,290 L300,274 L360,269 L420,256 L480,210 L540,216 L600,245 L660,264 L720,306 L780,301 L840,289 L900,289 L960,262 L1020,277 L1080,301 L1140,301 L1200,324 L1260,313 L1320,293 L1380,306 L1440,297 L1440,600 Z"
-            fill="#5c7797"
+            filter="url(#haze-5)"
+            d="M0,620 L0,237 C40.0,236.7 160.0,234.5 240,235 C320.0,235.5 400.0,244.8 480,240 C560.0,235.2 640.0,216.7 720,206 C800.0,195.3 880.0,176.0 960,176 C1040.0,176.0 1120.0,193.3 1200,206 C1280.0,218.7 1400.0,244.3 1440,252 L1440,620 Z"
+            fill="#3f6088"
           />
           <path
-            d="M0,600 L0,342 L60,327 L120,333 L180,358 L240,348 L300,353 L360,351 L420,333 L480,354 L540,361 L600,360 L660,369 L720,334 L780,307 L840,293 L900,263 L960,299 L1020,328 L1080,333 L1140,356 L1200,347 L1260,340 L1320,359 L1380,353 L1440,364 L1440,600 Z"
-            fill="#405973"
+            filter="url(#haze-3)"
+            d="M0,620 L0,323 C40.0,316.0 160.0,287.8 240,281 C320.0,274.2 400.0,272.5 480,282 C560.0,291.5 640.0,323.8 720,338 C800.0,352.2 880.0,365.3 960,367 C1040.0,368.7 1120.0,351.5 1200,348 C1280.0,344.5 1400.0,346.3 1440,346 L1440,620 Z"
+            fill="#34517a"
           />
           <path
-            d="M0,600 L0,394 L60,411 L120,417 L180,402 L240,409 L300,400 L360,401 L420,427 L480,425 L540,429 L600,427 L660,396 L720,395 L780,393 L840,389 L900,411 L960,403 L1020,391 L1080,389 L1140,362 L1200,378 L1260,402 L1320,403 L1380,420 L1440,410 L1440,600 Z"
-            fill="#283c52"
+            d="M0,620 L0,388 C48.0,396.5 192.0,425.8 288,439 C384.0,452.2 480.0,465.3 576,467 C672.0,468.7 768.0,453.0 864,449 C960.0,445.0 1056.0,441.5 1152,443 C1248.0,444.5 1392.0,455.5 1440,458 L1440,620 Z"
+            fill="#28405f"
           />
           <path
-            d="M0,600 L0,600 L29,543 L55,600 L74,508 L98,600 L124,476 L146,600 L170,514 L189,600 L216,499 L239,600 L255,536 L270,600 L290,401 L314,600 L345,399 L369,600 L388,493 L411,600 L432,502 L458,600 L472,527 L492,600 L515,482 L543,600 L569,529 L595,600 L616,536 L644,600 L667,533 L690,600 L707,530 L727,600 L756,513 L780,600 L797,444 L816,600 L830,514 L850,600 L865,526 L884,600 L899,488 L920,600 L937,518 L962,600 L978,535 L994,600 L1019,523 L1036,600 L1056,536 L1073,600 L1098,541 L1124,600 L1144,508 L1164,600 L1182,476 L1198,600 L1218,409 L1236,600 L1253,516 L1270,600 L1282,515 L1301,600 L1319,414 L1345,600 L1371,499 L1401,600 L1423,509 L1440,600 L1440,600 Z"
-            fill="#0a1420"
+            d="M0,620 L0,551 C48.0,547.8 192.0,535.3 288,532 C384.0,528.7 480.0,529.8 576,531 C672.0,532.2 768.0,542.0 864,539 C960.0,536.0 1056.0,523.2 1152,513 C1248.0,502.8 1392.0,483.8 1440,478 L1440,620 Z"
+            fill="#1a2c47"
           />
         </svg>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_60%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/10 to-black/45" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(255,255,255,0.10),transparent_55%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/35" />
         <LogoMark className="relative mb-6 size-20 drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)] sm:size-24" />
         <span className="font-heading relative text-6xl leading-none font-bold tracking-tight text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)] sm:text-7xl md:text-8xl">
           Click One
