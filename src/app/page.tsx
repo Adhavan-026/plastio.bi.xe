@@ -15,7 +15,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Logo, LogoMark } from "@/components/logo";
+import { Logo } from "@/components/logo";
 
 const AUDIENCES = ["Agro & Fertilizer Shops", "Tyre & Auto Shops", "General Retail"];
 
@@ -252,10 +252,7 @@ export default function Home() {
         </svg>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(255,255,255,0.10),transparent_55%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/35" />
-        <LogoMark className="relative mb-6 size-20 drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)] sm:size-24" />
-        <span className="font-heading relative text-6xl leading-none font-bold tracking-tight text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)] sm:text-7xl md:text-8xl">
-          Click One
-        </span>
+        <Logo className="relative h-16 w-auto shrink-0 brightness-0 invert drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)] sm:h-20 md:h-24" />
         <p className="relative mt-6 text-xs font-semibold tracking-[0.3em] text-white/70 uppercase sm:text-sm">
           GST Billing, Simplified
         </p>
