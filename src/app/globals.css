@@ -53,50 +53,53 @@
 }
 
 /*
- * Porcelain & Emerald: clean fintech palette.
- * base #F7F8FA, surface #FFFFFF, border #E2E5EA, accent #10B77F, text #10151F
+ * Astro Novalite: biscay #1e3a76, steel blue #4a7cba, cornflower #8cb2e3,
+ * double colonial white #f0e3a8, rose bud #f7a1a1.
  * Light mode is an elevation ladder, darkest to lightest:
- *   border < muted/secondary < background (porcelain) < card/sidebar (pure white)
+ *   border < muted/secondary < background < card/sidebar (pure white)
  * Card/sidebar stay pure white so they visibly lift off the canvas instead
- * of blending into it.
+ * of blending into it. Semantic colors are drawn from the same 5-hue
+ * palette: biscay = primary/brand, steel blue = success/positive, cornflower
+ * = accent/hover, and darkened variants of double colonial white / rose bud
+ * carry warning/destructive (kept legible as text on light tinted badges).
  */
 :root {
-  --background: oklch(0.973 0.004 250);
-  --foreground: oklch(0.17 0.02 258);
+  --background: oklch(0.976 0.006 255);
+  --foreground: oklch(0.22 0.035 263);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.17 0.02 258);
+  --card-foreground: oklch(0.22 0.035 263);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.17 0.02 258);
-  --primary: oklch(0.62 0.145 158);
+  --popover-foreground: oklch(0.22 0.035 263);
+  --primary: oklch(0.363 0.109 263);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.95 0.005 250);
-  --secondary-foreground: oklch(0.17 0.02 258);
-  --muted: oklch(0.95 0.005 250);
-  --muted-foreground: oklch(0.48 0.02 258);
-  --accent: oklch(0.93 0.05 158);
-  --accent-foreground: oklch(0.32 0.1 158);
-  --destructive: oklch(0.55 0.19 25);
-  --success: oklch(0.62 0.145 158);
+  --secondary: oklch(0.95 0.012 255);
+  --secondary-foreground: oklch(0.22 0.035 263);
+  --muted: oklch(0.95 0.012 255);
+  --muted-foreground: oklch(0.48 0.025 258);
+  --accent: oklch(0.9 0.05 255);
+  --accent-foreground: oklch(0.32 0.09 263);
+  --destructive: oklch(0.58 0.19 20);
+  --success: oklch(0.579 0.11 255);
   --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.62 0.15 55);
+  --warning: oklch(0.55 0.13 97);
   --warning-foreground: oklch(0.99 0 0);
-  --border: oklch(0.91 0.006 250);
-  --input: oklch(0.91 0.006 250);
-  --ring: oklch(0.62 0.145 158);
-  --chart-1: oklch(0.62 0.145 158);
-  --chart-2: oklch(0.6 0.15 240);
-  --chart-3: oklch(0.62 0.15 55);
-  --chart-4: oklch(0.55 0.19 25);
-  --chart-5: oklch(0.45 0.12 158);
+  --border: oklch(0.9 0.012 255);
+  --input: oklch(0.9 0.012 255);
+  --ring: oklch(0.363 0.109 263);
+  --chart-1: oklch(0.363 0.109 263);
+  --chart-2: oklch(0.579 0.11 255);
+  --chart-3: oklch(0.754 0.082 255);
+  --chart-4: oklch(0.55 0.13 97);
+  --chart-5: oklch(0.58 0.19 20);
   --radius: 0.625rem;
   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.17 0.02 258);
-  --sidebar-primary: oklch(0.62 0.145 158);
+  --sidebar-foreground: oklch(0.22 0.035 263);
+  --sidebar-primary: oklch(0.363 0.109 263);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.93 0.05 158);
-  --sidebar-accent-foreground: oklch(0.32 0.1 158);
-  --sidebar-border: oklch(0.91 0.006 250);
-  --sidebar-ring: oklch(0.62 0.145 158);
+  --sidebar-accent: oklch(0.9 0.05 255);
+  --sidebar-accent-foreground: oklch(0.32 0.09 263);
+  --sidebar-border: oklch(0.9 0.012 255);
+  --sidebar-ring: oklch(0.363 0.109 263);
 }
 
 .dark {

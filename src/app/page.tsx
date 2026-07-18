@@ -159,8 +159,8 @@ function DashboardMockup() {
           <div className="grid grid-cols-3 gap-2">
             {[
               ["bg-primary", "₹1,01,641"],
-              ["bg-amber-400", "13"],
-              ["bg-rose-400", "2"],
+              ["bg-warning", "13"],
+              ["bg-destructive", "2"],
             ].map(([tone, value]) => (
               <div key={value} className="rounded-lg border p-2">
                 <span className={`block h-1 w-5 rounded-full ${tone}`} />
@@ -476,7 +476,7 @@ export default function Home() {
 
         {/* Final CTA */}
         <section className="px-6 py-20 sm:px-10">
-          <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 rounded-3xl bg-linear-to-br from-[#0B3B2E] via-[#0F5D3E] to-[#10B77F] px-8 py-16 text-center text-white">
+          <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 rounded-3xl bg-linear-to-br from-[#0d1b33] via-[#1e3a76] to-[#4a7cba] px-8 py-16 text-center text-white">
             <h2 className="max-w-lg text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               Ready to bill smarter?
             </h2>
@@ -487,7 +487,7 @@ export default function Home() {
               size="lg"
               render={<Link href="/login" />}
               nativeButton={false}
-              className="bg-white px-8 text-[#0F5D3E] hover:bg-white/90"
+              className="bg-white px-8 text-[#1e3a76] hover:bg-white/90"
             >
               Get Started
               <ArrowRight />

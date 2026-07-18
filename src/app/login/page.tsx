@@ -13,7 +13,7 @@ const FEATURES = [
 export default function LoginPage() {
   return (
     <div className="flex min-h-svh">
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-linear-to-br from-[#0B3B2E] via-[#0F5D3E] to-[#10B77F] p-10 text-white lg:flex">
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-linear-to-br from-[#0d1b33] via-[#1e3a76] to-[#4a7cba] p-10 text-white lg:flex">
         <div className="absolute top-1/4 -left-24 size-72 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute -right-16 bottom-0 size-80 rounded-full bg-white/10 blur-3xl" />
 
