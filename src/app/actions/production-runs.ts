@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
 import { getNextRunNumber } from "@/lib/production/numbering";
@@ -79,7 +80,7 @@ export async function createProductionRun(
   });
 
   revalidatePath("/dashboard/production/runs");
-  return { message: `Production run ${run.runNumber} created as a draft.` };
+  redirect(`/dashboard/production/runs/${run.id}`);
 }
 
 export async function startProductionRunAction(

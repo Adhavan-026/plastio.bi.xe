@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
 import { getNextChallanNumber } from "@/lib/production/numbering";
@@ -94,7 +95,7 @@ export async function createOutwardChallan(
     });
 
     revalidatePath("/dashboard/production/job-work");
-    return { message: `Challan ${challan.challanNumber} created.` };
+    redirect(`/dashboard/production/job-work/${challan.id}`);
   } catch (e) {
     if (e instanceof Error && e.name === "InsufficientStockError") {
       return { message: e.message };
@@ -178,7 +179,7 @@ export async function createInwardReturn(
   // a balance negative.
   const shareOfTotal = outwardTotalQty.isZero() ? new Decimal(0) : thisReturnQty.div(outwardTotalQty);
 
-  const challan = await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx) => {
     const challanNumber = await getNextChallanNumber(tx, context.tenantId, new Date(date));
     const created = await tx.jobWorkChallan.create({
       data: {
@@ -235,5 +236,5 @@ export async function createInwardReturn(
 
   revalidatePath("/dashboard/production/job-work");
   revalidatePath(`/dashboard/production/job-work/${linkedChallanId}`);
-  return { message: `Return recorded as ${challan.challanNumber}. Outward challan is now ${newStatus.replace("_", " ").toLowerCase()}.` };
+  redirect(`/dashboard/production/job-work/${linkedChallanId}`);
 }

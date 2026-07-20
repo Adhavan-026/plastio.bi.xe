@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getTenantDb, getTenantContext, requireRole } from "@/lib/tenant-db";
 import { BomFormSchema, BomLineInputSchema, type BomFormState } from "@/lib/validations/bom";
 import { parseJsonLines } from "@/lib/validations/parse-json-lines";
@@ -61,7 +62,7 @@ export async function createBom(
   });
 
   revalidatePath("/dashboard/production/boms");
-  return { message: "BOM created." };
+  redirect("/dashboard/production/boms");
 }
 
 export async function updateBom(
@@ -123,7 +124,7 @@ export async function updateBom(
 
   revalidatePath("/dashboard/production/boms");
   revalidatePath(`/dashboard/production/boms/${bomId}`);
-  return { message: "BOM updated." };
+  redirect("/dashboard/production/boms");
 }
 
 export async function setBomActive(

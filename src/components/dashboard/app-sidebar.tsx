@@ -15,6 +15,7 @@ import {
   Settings,
   ChevronsLeft,
   ChevronsRight,
+  Factory,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/logo";
@@ -40,6 +41,7 @@ export function buildNavItems(businessType: BusinessType, lowStockCount: number)
       icon: AlertTriangle,
       badge: lowStockCount > 0 ? lowStockCount : undefined,
     },
+    { href: "/dashboard/production", label: "Production", icon: Factory },
     { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
     ...(businessType === "TYRE"
       ? [{ href: "/dashboard/warranty-lookup", label: "Warranty", icon: ShieldCheck }]

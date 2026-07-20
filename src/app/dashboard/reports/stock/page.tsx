@@ -4,6 +4,7 @@ import { PrintReportButton } from "@/components/reports/print-report-button";
 import { StockValueChart } from "@/components/reports/stock-value-chart";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
+import { ListFilterBar } from "@/components/list/list-filter-bar";
 import {
   Table,
   TableBody,
@@ -14,11 +15,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default async function StockReportPage() {
+const STOCK_CATEGORY_OPTIONS = [
+  { value: "RAW", label: "Raw material" },
+  { value: "WIP", label: "Work in progress" },
+  { value: "FINISHED", label: "Finished" },
+  { value: "BYPRODUCT", label: "Byproduct" },
+  { value: "TRADE", label: "Trade" },
+];
+
+export default async function StockReportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
   await requireActiveSubscription();
+  const params = await searchParams;
   const db = await getTenantDb();
   const products = await db.product.findMany({
-    where: { isActive: true },
+    where: { isActive: true, ...(params.category ? { stockCategory: params.category } : {}) },
     orderBy: { name: "asc" },
   });
 
@@ -67,6 +81,13 @@ export default async function StockReportPage() {
           />
         </div>
       </div>
+
+      <ListFilterBar
+        status={params.category}
+        statusOptions={STOCK_CATEGORY_OPTIONS}
+        statusParamName="category"
+        statusLabel="Stock category"
+      />
 
       <StockValueChart rows={rows} />
 

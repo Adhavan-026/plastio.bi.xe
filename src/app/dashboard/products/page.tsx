@@ -3,7 +3,7 @@ import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
-import { SearchBar } from "@/components/list/search-bar";
+import { ListFilterBar } from "@/components/list/list-filter-bar";
 import { BackButton } from "@/components/dashboard/back-button";
 import { AddCategoryButton } from "@/components/products/add-category-button";
 import { PriceManagementDialog } from "@/components/products/price-management-dialog";
@@ -20,10 +20,18 @@ import {
 
 const OTHER_GROUP_ID = "OTHER";
 
+const STOCK_CATEGORY_OPTIONS = [
+  { value: "RAW", label: "Raw material" },
+  { value: "WIP", label: "Work in progress" },
+  { value: "FINISHED", label: "Finished" },
+  { value: "BYPRODUCT", label: "Byproduct" },
+  { value: "TRADE", label: "Trade" },
+];
+
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; category?: string }>;
 }) {
   await requireActiveSubscription();
   const params = await searchParams;
@@ -32,14 +40,17 @@ export default async function ProductsPage({
   const { tenantId } = await getTenantContext();
   const db = await getTenantDb();
 
-  const where = q
-    ? {
-        OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { hsnCode: { contains: q, mode: "insensitive" as const } },
-        ],
-      }
-    : {};
+  const where = {
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q, mode: "insensitive" as const } },
+            { hsnCode: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+    ...(params.category ? { stockCategory: params.category } : {}),
+  };
 
   const [products, tenant, categories] = await Promise.all([
     db.product.findMany({ where, orderBy: { name: "asc" } }),
@@ -75,7 +86,14 @@ export default async function ProductsPage({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SearchBar placeholder="Search by name or HSN..." defaultValue={q} />
+        <ListFilterBar
+          searchPlaceholder="Search by name or HSN..."
+          q={q}
+          status={params.category}
+          statusOptions={STOCK_CATEGORY_OPTIONS}
+          statusParamName="category"
+          statusLabel="Stock category"
+        />
         <AddCategoryButton />
       </div>
 
