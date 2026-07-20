@@ -25,6 +25,12 @@ import type { Role, PartyType } from "@/generated/prisma/enums";
 
 type InvoiceKind = "SALES" | "PURCHASE";
 
+// Production module: RAW/WIP items are stock-only (inputs to a production
+// run), not something a shop sells directly — only these categories can go
+// on a sales invoice. Purchase bills have no such restriction (a factory
+// buys RAW material, a trading shop buys TRADE stock, etc).
+const SELLABLE_CATEGORIES = ["FINISHED", "BYPRODUCT", "TRADE"];
+
 // Postgres unique-constraint violation surfaced by Prisma — the only way a
 // custom bill number can clash after passing the pre-check (a concurrent
 // save grabbed it first).
@@ -126,13 +132,22 @@ async function createInvoiceCore(
   if (productIds.length > 0) {
     const ownedProducts = await db.product.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, hsnCode: true },
+      select: { id: true, name: true, hsnCode: true, stockCategory: true },
     });
     const ownedIds = new Set(ownedProducts.map((p) => p.id));
     if (!productIds.every((id) => ownedIds.has(id))) {
       return { message: "One or more selected products are invalid." };
     }
     for (const p of ownedProducts) hsnByProductId.set(p.id, p.hsnCode);
+
+    if (kind === "SALES") {
+      const nonSellable = ownedProducts.find((p) => !SELLABLE_CATEGORIES.includes(p.stockCategory));
+      if (nonSellable) {
+        return {
+          message: `${nonSellable.name} is a raw material / work-in-progress item and can't be sold directly.`,
+        };
+      }
+    }
   }
 
   // Agro module: batches must belong to this tenant AND to the product the line references.
@@ -416,13 +431,22 @@ export async function updateInvoice(
   if (productIds.length > 0) {
     const ownedProducts = await db.product.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, hsnCode: true },
+      select: { id: true, name: true, hsnCode: true, stockCategory: true },
     });
     const ownedIds = new Set(ownedProducts.map((p) => p.id));
     if (!productIds.every((id) => ownedIds.has(id))) {
       return { message: "One or more selected products are invalid." };
     }
     for (const p of ownedProducts) hsnByProductId.set(p.id, p.hsnCode);
+
+    if (kind === "SALES") {
+      const nonSellable = ownedProducts.find((p) => !SELLABLE_CATEGORIES.includes(p.stockCategory));
+      if (nonSellable) {
+        return {
+          message: `${nonSellable.name} is a raw material / work-in-progress item and can't be sold directly.`,
+        };
+      }
+    }
   }
 
   const batchIds = items.map((item) => item.batchId).filter((id): id is string => !!id);

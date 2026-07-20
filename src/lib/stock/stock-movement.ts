@@ -55,12 +55,30 @@ export class InsufficientStockError extends Error {
   }
 }
 
+// Builds the { <bucket field>: { increment: qty } } update payload as an
+// explicit switch (rather than a computed property on BUCKET_FIELD) so the
+// result stays a precise literal-keyed type Prisma's generated update input
+// can actually verify, instead of a widened Record<string, ...>.
+function bucketIncrementData(
+  bucket: StockBucket,
+  qty: DecimalInput
+): Partial<Record<"stockQty" | "wipQty" | "qtyWithJobWorker", { increment: DecimalInput }>> {
+  switch (bucket) {
+    case "ON_HAND":
+      return { stockQty: { increment: qty } };
+    case "WIP":
+      return { wipQty: { increment: qty } };
+    case "WITH_JOB_WORKER":
+      return { qtyWithJobWorker: { increment: qty } };
+  }
+}
+
 // Duck-typed against the tenant-scoped transaction client (see
 // src/lib/tenant-db.ts) — matches the pattern already used by
 // src/lib/billing/invoice-number.ts for the same reason: the extended
 // client's generated types aren't structurally assignable between call
 // sites, but every caller's `tx` satisfies this shape.
-type Tx = {
+export type StockMovementTx = {
   product: {
     findUnique: (args: {
       where: { id: string };
@@ -68,11 +86,22 @@ type Tx = {
     }) => Promise<Record<string, unknown> | null>;
     update: (args: {
       where: { id: string };
-      data: Record<string, unknown>;
+      data: Partial<Record<"stockQty" | "wipQty" | "qtyWithJobWorker", { increment: DecimalInput }>>;
     }) => Promise<unknown>;
   };
   stockLedger: {
-    create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+    create: (args: {
+      data: {
+        tenantId: string;
+        productId: string;
+        qty: DecimalInput;
+        bucket: StockBucket;
+        reason: StockMovementReason;
+        refType: StockRefType;
+        refId: string;
+        date: Date;
+      };
+    }) => Promise<unknown>;
   };
 };
 
@@ -82,7 +111,7 @@ type Tx = {
  * `qty` is signed: positive adds to the bucket, negative removes.
  */
 export async function recordStockMovement(
-  tx: Tx,
+  tx: StockMovementTx,
   params: {
     tenantId: string;
     productId: string;
@@ -94,11 +123,9 @@ export async function recordStockMovement(
     date?: Date;
   }
 ): Promise<void> {
-  const field = BUCKET_FIELD[params.bucket];
-
   await tx.product.update({
     where: { id: params.productId },
-    data: { [field]: { increment: params.qty } },
+    data: bucketIncrementData(params.bucket, params.qty),
   });
 
   await tx.stockLedger.create({
@@ -122,7 +149,7 @@ export async function recordStockMovement(
  * explains where the quantity went.
  */
 export async function transferStockBucket(
-  tx: Tx,
+  tx: StockMovementTx,
   params: {
     tenantId: string;
     productId: string;
@@ -156,7 +183,7 @@ export async function transferStockBucket(
  * issuing any movements so a run either starts cleanly or not at all.
  */
 export async function checkSufficientStock(
-  tx: Tx,
+  tx: StockMovementTx,
   lines: { productId: string; bucket: StockBucket; qty: DecimalInput }[]
 ): Promise<InsufficientStockError | null> {
   const shortages: ConstructorParameters<typeof InsufficientStockError>[0] = [];
