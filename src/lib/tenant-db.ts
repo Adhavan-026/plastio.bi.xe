@@ -19,6 +19,14 @@ const TENANT_SCOPED_MODELS = new Set([
   "Counter",
   "StockAdjustment",
   "StockBatch",
+  "Bom",
+  "BomLine",
+  "ProductionRun",
+  "ProductionInput",
+  "ProductionOutput",
+  "JobWorkChallan",
+  "JobWorkChallanLine",
+  "StockLedger",
 ]);
 
 export type TenantContext = {
