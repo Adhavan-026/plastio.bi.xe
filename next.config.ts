@@ -1,5 +1,13 @@
 import type { NextConfig } from "next";
 
+// Pins the workspace root to this folder explicitly. Without this, Next
+// auto-detects a root by scanning upward for the nearest lockfile — if
+// this project ever ends up nested inside another folder that also has a
+// package-lock.json (e.g. someone `git clone`s it into a copy of itself),
+// Next silently picks the wrong root and mis-shapes .next/standalone's
+// output layout, breaking the desktop build in a very confusing way.
+const turbopackRoot = __dirname;
+
 // Only the desktop build packages a standalone server.js (bundled into the
 // Electron app so it can run without a separate Node/npm install on the
 // end user's machine). Left unset for cloud: Vercel has its own optimized
@@ -9,6 +17,9 @@ import type { NextConfig } from "next";
 const isDesktop = process.env.DEPLOYMENT_MODE === "desktop";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: turbopackRoot,
+  },
   ...(isDesktop
     ? {
         output: "standalone",
