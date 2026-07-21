@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-db";
+import { isDesktopMode } from "@/lib/deployment-mode";
 import type { SubscriptionPlan } from "@/lib/enums";
 
 export const PLAN_DURATION_DAYS: Record<SubscriptionPlan, number> = {
@@ -31,6 +32,11 @@ export function isSubscriptionActive(tenant: { subscriptionExpiresAt: Date | nul
  * expired shop can still see its status and enter new keys.
  */
 export async function requireActiveSubscription(): Promise<void> {
+  // Offline shops don't have a recurring subscription to lapse — licensing
+  // for the desktop build is a one-time purchase enforced at install time,
+  // not by this cloud billing flow.
+  if (isDesktopMode) return;
+
   const { tenantId } = await getTenantContext();
   const tenant = await prisma.tenant.findUniqueOrThrow({
     where: { id: tenantId },

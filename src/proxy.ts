@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { ADMIN_COOKIE_NAME, verifyAdminToken } from "@/lib/admin-session";
+import { isDesktopMode } from "@/lib/deployment-mode";
 
 const PUBLIC_ROUTES = new Set([
   "/",
@@ -29,6 +30,17 @@ export default async function proxy(req: NextRequest) {
     }
     if (isLoggedIn && pathname === ADMIN_LOGIN_ROUTE) {
       return NextResponse.redirect(new URL("/admin", req.nextUrl));
+    }
+    return NextResponse.next();
+  }
+
+  // Desktop mode has no login — every route is always "logged in" as the
+  // single auto-created shop owner (see src/lib/session.ts). Bounce the
+  // auth-only pages straight to the dashboard instead of showing a login
+  // form that has nothing real to authenticate against.
+  if (isDesktopMode) {
+    if (PUBLIC_ROUTES.has(pathname)) {
+      return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
     }
     return NextResponse.next();
   }

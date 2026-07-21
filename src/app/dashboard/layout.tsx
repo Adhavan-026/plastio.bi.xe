@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import { getTenantContext, getTenantDb } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
@@ -6,26 +5,29 @@ import { AppSidebar, type BusinessType } from "@/components/dashboard/app-sideba
 import { AppTopBar } from "@/components/dashboard/app-topbar";
 import { SessionGuard } from "@/components/dashboard/session-guard";
 import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
+import { isDesktopMode } from "@/lib/deployment-mode";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { tenantId, userId } = await getTenantContext();
   const db = await getTenantDb();
-  const [tenant, session, dueCount, products, currentUser] = await Promise.all([
+  const [tenant, dueCount, products, currentUser] = await Promise.all([
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } }),
-    auth(),
     db.invoice.count({ where: { type: "SALES", paymentStatus: { in: ["UNPAID", "PARTIAL"] } } }),
     db.product.findMany({
       where: { isActive: true },
       select: { stockQty: true, lowStockAlert: true },
     }),
-    db.user.findUnique({ where: { id: userId }, select: { email: true, emailVerifiedAt: true } }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true, emailVerifiedAt: true },
+    }),
   ]);
-  const userName = session?.user?.name ?? "User";
+  const userName = currentUser?.name ?? "User";
   const lowStockCount = products.filter((p) => isLowStock(p.stockQty, p.lowStockAlert)).length;
 
   return (
     <div className="flex min-h-full">
-      <SessionGuard />
+      <SessionGuard desktopMode={isDesktopMode} />
       <AppSidebar
         tenantName={tenant.name}
         businessType={tenant.businessType as BusinessType}

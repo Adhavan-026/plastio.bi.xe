@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Zap, ShoppingCart, UserPlus, PackagePlus } from "lucide-react";
-import { auth } from "@/auth";
 import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
@@ -44,10 +43,10 @@ export default async function DashboardPage({
   const { range: rangeParam } = await searchParams;
   const activeRange = RANGE_TABS.find((r) => r.key === rangeParam) ?? RANGE_TABS[0];
 
-  const { tenantId } = await getTenantContext();
+  const { tenantId, userId } = await getTenantContext();
   const db = await getTenantDb();
-  const session = await auth();
-  const firstName = (session?.user?.name ?? "there").trim().split(/\s+/)[0];
+  const currentUser = await db.user.findUnique({ where: { id: userId }, select: { name: true } });
+  const firstName = (currentUser?.name ?? "there").trim().split(/\s+/)[0];
 
   const trendStart = new Date();
   trendStart.setDate(trendStart.getDate() - (activeRange.days - 1));

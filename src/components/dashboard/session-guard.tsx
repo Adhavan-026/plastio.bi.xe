@@ -15,8 +15,12 @@ import {
 const STALE_MS = 90_000;
 const PING_MS = 20_000;
 
-export function SessionGuard() {
+export function SessionGuard({ desktopMode = false }: { desktopMode?: boolean }) {
   useEffect(() => {
+    // Desktop mode has no login to expire and no cloud session to protect —
+    // closing/reopening the app window should never force a "log back in".
+    if (desktopMode) return;
+
     resetLoggingOut();
     const lastSeen = Number(localStorage.getItem(LAST_SEEN_KEY) ?? 0);
     if (lastSeen && Date.now() - lastSeen > STALE_MS) {
@@ -47,7 +51,7 @@ export function SessionGuard() {
       clearInterval(interval);
       window.removeEventListener("beforeunload", onBeforeUnload);
     };
-  }, []);
+  }, [desktopMode]);
 
   return null;
 }

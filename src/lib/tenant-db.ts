@@ -1,7 +1,8 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { isDesktopMode } from "@/lib/deployment-mode";
 import type { Role } from "@/lib/enums";
 
 // Prisma models that carry a tenantId column. Every model added to the
@@ -36,8 +37,13 @@ export type TenantContext = {
 };
 
 export async function requireSession() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) redirect("/login");
+
+  // Desktop mode's session always comes from getDesktopIdentity(), which
+  // just created the tenant if it didn't exist — no separate DB round trip
+  // needed to confirm it's there.
+  if (isDesktopMode) return session;
 
   // A session can outlive its tenant (account deleted, or a stale browser
   // session from before). Without this check, every downstream
