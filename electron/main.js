@@ -19,6 +19,7 @@ const path = require("path");
 const net = require("net");
 const { fork } = require("child_process");
 const { ensureDatabaseReady } = require("./db-init");
+const { registerBackupHandlers } = require("./backup");
 
 app.setName("clickOne");
 
@@ -36,6 +37,15 @@ const migrationsDir = isPackaged
 
 let mainWindow = null;
 let serverProcess = null;
+let dbPath = null;
+let backupsDir = null;
+
+function killServer() {
+  if (serverProcess) {
+    serverProcess.kill();
+    serverProcess = null;
+  }
+}
 
 function getFreePort() {
   return new Promise((resolve, reject) => {
@@ -81,7 +91,8 @@ function fatalError(title, error) {
 }
 
 async function startServer() {
-  const dbPath = path.join(app.getPath("userData"), "clickone.db");
+  dbPath = path.join(app.getPath("userData"), "clickone.db");
+  backupsDir = path.join(app.getPath("userData"), "backups");
 
   try {
     ensureDatabaseReady(dbPath, migrationsDir);
@@ -184,6 +195,12 @@ if (!gotLock) {
     try {
       const port = await startServer();
       createWindow(port);
+      registerBackupHandlers({
+        getDbPath: () => dbPath,
+        getBackupsDir: () => backupsDir,
+        getMainWindow: () => mainWindow,
+        killServer,
+      });
     } catch (error) {
       fatalError("clickOne failed to start", error);
     }
@@ -195,10 +212,5 @@ if (!gotLock) {
     app.quit();
   });
 
-  app.on("before-quit", () => {
-    if (serverProcess) {
-      serverProcess.kill();
-      serverProcess = null;
-    }
-  });
+  app.on("before-quit", killServer);
 }

@@ -1,6 +1,8 @@
 import { getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
+import { isDesktopMode } from "@/lib/deployment-mode";
 import { FontSizeControl } from "@/components/settings/font-size-control";
+import { DesktopBackupPanel } from "@/components/settings/desktop-backup-panel";
 import { BackButton } from "@/components/dashboard/back-button";
 import { SettingsForm } from "./settings-form";
 
@@ -18,6 +20,7 @@ export default async function SettingsPage() {
         </p>
       </div>
       <FontSizeControl />
+      {isDesktopMode && <DesktopBackupPanel />}
       <SettingsForm
         defaultValues={{
           name: tenant.name,
