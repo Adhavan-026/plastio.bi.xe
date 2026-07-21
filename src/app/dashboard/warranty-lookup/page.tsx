@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
+import { ciContains } from "@/lib/db-search";
 import { getWarrantyExpiry, isWarrantyValid } from "@/lib/billing/warranty";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
 import { BackButton } from "@/components/dashboard/back-button";
@@ -27,7 +28,7 @@ export default async function WarrantyLookupPage({
 
   const results = serial
     ? await db.invoiceItem.findMany({
-        where: { tyreSerialNumber: { contains: serial, mode: "insensitive" } },
+        where: { tyreSerialNumber: ciContains(serial) },
         include: { invoice: { include: { party: true } } },
         orderBy: { invoice: { invoiceDate: "desc" } },
       })

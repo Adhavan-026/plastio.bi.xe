@@ -2,7 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-db";
-import type { SubscriptionPlan } from "@/generated/prisma/enums";
+import type { SubscriptionPlan } from "@/lib/enums";
 
 export const PLAN_DURATION_DAYS: Record<SubscriptionPlan, number> = {
   DAILY: 1,

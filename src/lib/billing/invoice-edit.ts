@@ -1,4 +1,4 @@
-import type { Role } from "@/generated/prisma/enums";
+import type { Role } from "@/lib/enums";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

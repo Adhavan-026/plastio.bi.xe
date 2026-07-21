@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
 import { getTenantDb } from "@/lib/tenant-db";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
+import { ciContains } from "@/lib/db-search";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { ListFilterBar } from "@/components/list/list-filter-bar";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -38,8 +39,8 @@ export default async function JobWorkPage({
     ...(q
       ? {
           OR: [
-            { challanNumber: { contains: q, mode: "insensitive" as const } },
-            { party: { name: { contains: q, mode: "insensitive" as const } } },
+            { challanNumber: ciContains(q) },
+            { party: { name: ciContains(q) } },
           ],
         }
       : {}),

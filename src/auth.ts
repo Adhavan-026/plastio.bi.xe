@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import type { Role } from "@/generated/prisma/enums";
+import type { Role } from "@/lib/enums";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Fixed 24h window from login, not sliding — this app never calls
@@ -35,7 +35,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           email: user.email,
           tenantId: user.tenantId,
-          role: user.role,
+          role: user.role as Role,
         };
       },
     }),

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
+import { ciContains } from "@/lib/db-search";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { SearchBar } from "@/components/list/search-bar";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -39,8 +40,8 @@ export default async function InvoicesPage({
     ...(q
       ? {
           OR: [
-            { invoiceNumber: { contains: q, mode: "insensitive" as const } },
-            { party: { name: { contains: q, mode: "insensitive" as const } } },
+            { invoiceNumber: ciContains(q) },
+            { party: { name: ciContains(q) } },
           ],
         }
       : {}),

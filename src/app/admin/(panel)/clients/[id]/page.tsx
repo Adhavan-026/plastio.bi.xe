@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { isSubscriptionActive, PLAN_LABELS } from "@/lib/billing/subscription";
+import type { SubscriptionPlan } from "@/lib/enums";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -89,7 +90,7 @@ export default async function AdminClientDetailPage({
           )}
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-muted-foreground">Current plan</dt>
-            <dd>{tenant.subscriptionPlan ? PLAN_LABELS[tenant.subscriptionPlan] : "—"}</dd>
+            <dd>{tenant.subscriptionPlan ? PLAN_LABELS[tenant.subscriptionPlan as SubscriptionPlan] : "—"}</dd>
             <dt className="text-muted-foreground">Keys redeemed</dt>
             <dd>
               {tenant.keysRedeemedAt ? tenant.keysRedeemedAt.toLocaleDateString("en-IN") : "Not yet"}
@@ -134,7 +135,7 @@ export default async function AdminClientDetailPage({
             )}
             {tenant.subscriptionIssues.map((issue) => (
               <TableRow key={issue.id}>
-                <TableCell>{PLAN_LABELS[issue.plan]}</TableCell>
+                <TableCell>{PLAN_LABELS[issue.plan as SubscriptionPlan]}</TableCell>
                 <TableCell>
                   {issue.amountPaid ? `₹${Number(issue.amountPaid).toFixed(2)}` : "—"}
                 </TableCell>

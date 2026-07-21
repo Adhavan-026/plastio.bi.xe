@@ -2,7 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import type { Role } from "@/generated/prisma/enums";
+import type { Role } from "@/lib/enums";
 
 // Prisma models that carry a tenantId column. Every model added to the
 // schema that belongs to a shop (Product, Party, Invoice, ...) MUST be

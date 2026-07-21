@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
+import { ciContains } from "@/lib/db-search";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { ListFilterBar } from "@/components/list/list-filter-bar";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -22,7 +23,7 @@ export default async function BomsPage({
 
   const db = await getTenantDb();
   const where = {
-    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(q ? { name: ciContains(q) } : {}),
     ...(params.status === "active" ? { isActive: true } : {}),
     ...(params.status === "inactive" ? { isActive: false } : {}),
   };

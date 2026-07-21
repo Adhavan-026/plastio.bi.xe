@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
 import { getTenantDb } from "@/lib/tenant-db";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
+import { ciContains } from "@/lib/db-search";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { ListFilterBar } from "@/components/list/list-filter-bar";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -36,7 +37,7 @@ export default async function ProductionRunsPage({
 
   const db = await getTenantDb();
   const where = {
-    ...(q ? { runNumber: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(q ? { runNumber: ciContains(q) } : {}),
     ...(params.status ? { status: params.status } : {}),
     ...(params.from || params.to
       ? {

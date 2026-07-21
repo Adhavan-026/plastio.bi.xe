@@ -4,14 +4,26 @@ import { config } from "dotenv";
 config({ quiet: true });
 import { defineConfig } from "prisma/config";
 
+// DEPLOYMENT_MODE selects which of the two schemas (see
+// prisma/schema.prisma vs prisma/schema.desktop.prisma) every Prisma CLI
+// command targets — unset/anything else defaults to "cloud" so existing
+// tooling (Vercel builds, local dev against Supabase) is unaffected unless
+// this is explicitly set to "desktop". Same flag the app itself reads for
+// the auth/tenant bypass — see src/lib/deployment-mode.ts.
+const isDesktop = process.env["DEPLOYMENT_MODE"] === "desktop";
+
 export default defineConfig({
-  schema: "prisma/schema.prisma",
+  schema: isDesktop ? "prisma/schema.desktop.prisma" : "prisma/schema.prisma",
   migrations: {
-    path: "prisma/migrations",
+    // Separate migration history per target — SQLite and Postgres migrations
+    // must never intermix, they're structurally different SQL.
+    path: isDesktop ? "prisma/migrations-desktop" : "prisma/migrations",
   },
   datasource: {
-    // Migrations need a direct (non-pgbouncer) connection.
-    // The app itself connects via DATABASE_URL (pooled) — see src/lib/prisma.ts
-    url: process.env["DIRECT_URL"],
+    // Cloud: migrations need a direct (non-pgbouncer) connection; the app
+    // itself connects via DATABASE_URL (pooled) — see src/lib/prisma.ts.
+    // Desktop: SQLite has no pooling distinction, DESKTOP_DB_PATH is the
+    // single local file path used both for migrations and app runtime.
+    url: isDesktop ? `file:${process.env["DESKTOP_DB_PATH"] ?? "./prisma/desktop-dev.db"}` : process.env["DIRECT_URL"],
   },
 });

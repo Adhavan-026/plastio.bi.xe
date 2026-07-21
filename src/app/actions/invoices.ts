@@ -21,7 +21,7 @@ import {
   type SalesInvoiceFormState,
 } from "@/lib/validations/invoice";
 import { canEditInvoice } from "@/lib/billing/invoice-edit";
-import type { Role, PartyType } from "@/generated/prisma/enums";
+import type { Role, PartyType } from "@/lib/enums";
 
 type InvoiceKind = "SALES" | "PURCHASE";
 
@@ -123,7 +123,7 @@ async function createInvoiceCore(
     db.party.findUnique({ where: { id: partyId } }),
   ]);
 
-  if (!party || !config.validPartyTypes.includes(party.type)) {
+  if (!party || !config.validPartyTypes.includes(party.type as PartyType)) {
     return { errors: { partyId: [config.partyErrorMessage] } };
   }
 
@@ -422,7 +422,7 @@ export async function updateInvoice(
   const items = itemsResult.data;
 
   const party = await db.party.findUnique({ where: { id: partyId } });
-  if (!party || !config.validPartyTypes.includes(party.type)) {
+  if (!party || !config.validPartyTypes.includes(party.type as PartyType)) {
     return { errors: { partyId: [config.partyErrorMessage] } };
   }
 

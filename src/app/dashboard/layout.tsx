@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { getTenantContext, getTenantDb } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
-import { AppSidebar } from "@/components/dashboard/app-sidebar";
+import { AppSidebar, type BusinessType } from "@/components/dashboard/app-sidebar";
 import { AppTopBar } from "@/components/dashboard/app-topbar";
 import { SessionGuard } from "@/components/dashboard/session-guard";
 import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
@@ -28,13 +28,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <SessionGuard />
       <AppSidebar
         tenantName={tenant.name}
-        businessType={tenant.businessType}
+        businessType={tenant.businessType as BusinessType}
         lowStockCount={lowStockCount}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopBar
           tenantName={tenant.name}
-          businessType={tenant.businessType}
+          businessType={tenant.businessType as BusinessType}
           userName={userName}
           dueCount={dueCount}
           lowStockCount={lowStockCount}

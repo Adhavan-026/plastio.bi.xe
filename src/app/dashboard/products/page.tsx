@@ -3,6 +3,7 @@ import { getTenantDb, getTenantContext } from "@/lib/tenant-db";
 import { prisma } from "@/lib/prisma";
 import { isLowStock } from "@/lib/billing/low-stock";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
+import { ciContains } from "@/lib/db-search";
 import { ListFilterBar } from "@/components/list/list-filter-bar";
 import { BackButton } from "@/components/dashboard/back-button";
 import { AddCategoryButton } from "@/components/products/add-category-button";
@@ -44,8 +45,8 @@ export default async function ProductsPage({
     ...(q
       ? {
           OR: [
-            { name: { contains: q, mode: "insensitive" as const } },
-            { hsnCode: { contains: q, mode: "insensitive" as const } },
+            { name: ciContains(q) },
+            { hsnCode: ciContains(q) },
           ],
         }
       : {}),

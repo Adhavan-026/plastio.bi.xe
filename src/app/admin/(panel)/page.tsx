@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { isSubscriptionActive } from "@/lib/billing/subscription";
 import { SearchBar } from "@/components/list/search-bar";
+import { ciContains } from "@/lib/db-search";
 import { ListPagination } from "@/components/list/list-pagination";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -44,8 +45,8 @@ export default async function AdminClientsPage({
   const where = q
     ? {
         OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { users: { some: { email: { contains: q, mode: "insensitive" as const } } } },
+          { name: ciContains(q) },
+          { users: { some: { email: ciContains(q) } } },
         ],
       }
     : {};

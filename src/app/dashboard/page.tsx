@@ -148,7 +148,11 @@ export default async function DashboardPage({
     partyName: invoice.party.name,
     invoiceDate: invoice.invoiceDate,
     totalAmount: Number(invoice.totalAmount),
-    status: getInvoiceStatusLabel(invoice.paymentStatus, invoice.invoiceDate, invoice.dueDate),
+    status: getInvoiceStatusLabel(
+      invoice.paymentStatus as "UNPAID" | "PARTIAL" | "PAID",
+      invoice.invoiceDate,
+      invoice.dueDate
+    ),
   }));
 
   const cards = [

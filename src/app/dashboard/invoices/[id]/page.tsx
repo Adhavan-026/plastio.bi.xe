@@ -251,7 +251,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <div className="w-1/2 border-r border-[var(--rule)] px-[3mm] py-[2.6mm]">
                 <CellLabel>Payment Status</CellLabel>
                 <div className="mt-[1.2mm]">
-                  <StatusPill status={invoice.paymentStatus} />
+                  <StatusPill status={invoice.paymentStatus as "PAID" | "PARTIAL" | "UNPAID"} />
                 </div>
               </div>
               <div className="w-1/2 px-[3mm] py-[2.6mm]">

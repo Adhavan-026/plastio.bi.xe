@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-db";
 import { PLAN_DURATION_DAYS } from "@/lib/billing/subscription";
+import type { SubscriptionPlan } from "@/lib/enums";
 
 export type RedeemSubscriptionState = { error?: string; message?: string } | undefined;
 
@@ -29,7 +30,7 @@ export async function redeemSubscription(
     return { error: "Those keys don't match. Double-check them or contact us for the correct keys." };
   }
 
-  const durationDays = PLAN_DURATION_DAYS[tenant.subscriptionPlan];
+  const durationDays = PLAN_DURATION_DAYS[tenant.subscriptionPlan as SubscriptionPlan];
   const expiresAt = new Date(Date.now() + durationDays * 86_400_000);
   const redeemedAt = new Date();
 

@@ -1,0 +1,677 @@
+// Prisma schema for Click One — DESKTOP (offline) build.
+//
+// This is a deliberately separate file from prisma/schema.prisma (cloud),
+// not a generated derivative — kept in manual sync so both are fully
+// readable/diffable in git. Differences from the cloud schema, and only
+// these differences, are intentional:
+//   1. datasource provider is "sqlite" instead of "postgresql".
+//   2. Every field that was a Prisma `enum` in the cloud schema is a plain
+//      String here (SQLite's Prisma connector doesn't support enums),
+//      matching the convention already used by the Production module's own
+//      status/category fields — see the comment on those fields below and
+//      in schema.prisma. The allowed values are documented in a trailing
+//      comment on each field, same style as the Production module.
+//   3. Every `@db.Decimal(x, y)` precision attribute is removed in favor of
+//      plain `Decimal` — SQLite's connector rejects the Postgres-specific
+//      attribute. Precision/scale still round-trips correctly through
+//      decimal.js on the application side regardless.
+// Everything else — models, fields, relations, indexes, cuid()/now()
+// defaults, onDelete behavior — is identical to schema.prisma on purpose,
+// so the same application code works against either client. See
+// docs/DESKTOP_BUILD.md for how this file is selected at build time.
+//
+// generator output is the SAME path as schema.prisma's — only one of the
+// two schemas is ever generated into it per build (cloud build generates
+// the Postgres client there; desktop build regenerates it as the SQLite
+// client), so application code's `@/generated/prisma/client` import never
+// needs to change based on target.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Tenant {
+  id           String @id @default(cuid())
+  name         String
+  businessType String @default("COMMON") // COMMON | AGRO | TYRE
+
+  // Shop profile (Settings phase will expand this)
+  gstNumber     String?
+  phone         String?
+  email         String?
+  address       String?
+  state         String?
+  logoUrl       String?
+  licenseNumber String? // Agro: pesticide/fertilizer dealer license, printed on invoices
+
+  // Tyre: default warranty period applied to new tyre products, so it
+  // doesn't need to be retyped on every product.
+  defaultWarrantyMonths Int?
+
+  // Invoice editing (owner-controlled): when enabled, OWNER/MANAGER can edit
+  // an invoice's date and details within this many days of the invoice date.
+  allowInvoiceEdit      Boolean @default(false)
+  invoiceEditWindowDays Int     @default(7)
+
+  // Production module: a completed run whose wastage exceeds this percent
+  // of total input gets flagged (ProductionRun.wastageExceeded).
+  maxWastagePercent Decimal @default(5)
+
+  // Subscription / licensing (managed by the Super Admin). Not meaningful in
+  // desktop mode (no Super Admin server to talk to) but left in place so the
+  // same client shape works — desktop's tenant simply never gets keys
+  // issued and the app never gates on this offline.
+  licenseKey            String?   @unique
+  activationCode        String?   @unique
+  subscriptionPlan      String? // DAILY | MONTHLY | YEARLY
+  subscriptionExpiresAt DateTime?
+  keysRedeemedAt        DateTime?
+
+  users              User[]
+  products           Product[]
+  productCategories  ProductCategory[]
+  productPriceLogs   ProductPriceLog[]
+  parties            Party[]
+  invoices           Invoice[]
+  payments           Payment[]
+  counters           Counter[]
+  stockAdjustments   StockAdjustment[]
+  stockBatches       StockBatch[]
+  subscriptionIssues SubscriptionIssue[]
+  boms               Bom[]
+  productionRuns     ProductionRun[]
+  jobWorkChallans    JobWorkChallan[]
+  stockLedgerEntries StockLedger[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tenants")
+}
+
+// A platform operator who manages shops from the Super Admin panel —
+// entirely separate from Tenant/User, with its own auth (src/admin-auth.ts).
+// Not used in desktop mode (no Super Admin server offline) but kept for
+// client-shape parity with the cloud schema.
+model SuperAdmin {
+  id           String @id @default(cuid())
+  name         String
+  email        String @unique
+  passwordHash String
+
+  issuedSubscriptions SubscriptionIssue[]
+
+  createdAt DateTime @default(now())
+
+  @@map("super_admins")
+}
+
+// Audit trail of every key pair issued to a shop, one row per admin action —
+// Tenant only ever holds the CURRENT keys, this is the history.
+model SubscriptionIssue {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  plan           String // DAILY | MONTHLY | YEARLY
+  licenseKey     String
+  activationCode String
+
+  amountPaid Decimal?
+  notes      String?
+
+  issuedByAdminId String
+  issuedByAdmin   SuperAdmin @relation(fields: [issuedByAdminId], references: [id])
+
+  issuedAt   DateTime  @default(now())
+  redeemedAt DateTime?
+
+  @@index([tenantId])
+  @@map("subscription_issues")
+}
+
+model User {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name         String
+  email        String @unique
+  passwordHash String
+  role         String @default("OWNER") // OWNER | MANAGER | CASHIER | ACCOUNTANT
+
+  isActive Boolean @default(true)
+
+  // Verified informationally, not enforced at login — existing users predate
+  // this field and would otherwise be locked out. Shows a dismissible nudge
+  // on the dashboard instead. Reused as the password-reset token pair too,
+  // since only one of either flow is ever in flight per user at a time.
+  emailVerifiedAt        DateTime?
+  emailVerifyToken       String?   @unique
+  emailVerifyExpiresAt   DateTime?
+  passwordResetToken     String?   @unique
+  passwordResetExpiresAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Product {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name    String
+  hsnCode String?
+  unit    String  @default("PCS") // PCS | KG | LITRE | BAG | BOX | METER | DOZEN | OTHER
+
+  gstRate       Decimal @default(0)
+  purchasePrice Decimal @default(0)
+  sellingPrice  Decimal @default(0)
+  stockQty      Decimal @default(0)
+  lowStockAlert Decimal @default(0)
+
+  // Legacy free-text field — for Tyre tenants this is repurposed as the
+  // vehicle a tyre fits (Car/Bike/Truck...); for others it's a freeform
+  // note. Distinct from categoryId below, which is the shop's own
+  // Tyre/Tube/Other-style product grouping shown on the products page.
+  category   String?
+  categoryId String?
+  isActive   Boolean @default(true)
+
+  // Tyre module — only meaningful/shown when the tenant's businessType is TYRE.
+  tyreBrand     String?
+  tyreSize      String?
+  tyrePattern   String?
+  tyreLoadIndex String?
+
+  // Production module. stockQty above is the on-hand balance regardless of
+  // category; these are the two other balances a product can carry at once.
+  stockCategory    String  @default("TRADE") // RAW | WIP | FINISHED | BYPRODUCT | TRADE
+  wipQty           Decimal @default(0) // issued into an in-progress run, not yet consumed
+  qtyWithJobWorker Decimal @default(0) // sent out on an open job-work challan
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productCategory  ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  invoiceItems     InvoiceItem[]
+  stockAdjustments StockAdjustment[]
+  stockBatches     StockBatch[]
+  priceLogs        ProductPriceLog[]
+
+  bomsAsOutput        Bom[]
+  bomLinesAsInput     BomLine[]
+  productionInputs    ProductionInput[]
+  productionOutputs   ProductionOutput[]
+  jobWorkChallanLines JobWorkChallanLine[]
+  stockLedgerEntries  StockLedger[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+// One row per price edit made from the products page's "Price management"
+// dialog — a running history of buying/selling price so a shop can see how
+// margins moved over time. Profit/margin isn't stored, just derived from
+// purchasePrice/sellingPrice at display time.
+model ProductPriceLog {
+  id        String @id @default(cuid())
+  tenantId  String
+  productId String
+
+  purchasePrice Decimal
+  sellingPrice  Decimal
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  changedAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([productId])
+  @@map("product_price_logs")
+}
+
+// Shop-defined product groupings shown as a filter dropdown on the products
+// page (e.g. Tyre / Tube / Battery) — distinct per tenant, created on the fly
+// via "Add category". Products left uncategorized show under "Other".
+model ProductCategory {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name String
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("product_categories")
+}
+
+// Agro module — a batch/lot of stock with its own expiry, so selling can
+// go oldest-expiry-first and shops get warned before stock goes bad.
+model StockBatch {
+  id       String @id @default(cuid())
+  tenantId String
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  batchNumber String
+  mfgDate     DateTime?
+  expiryDate  DateTime?
+
+  quantity      Decimal // remaining quantity in this batch
+  purchasePrice Decimal @default(0)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceItems InvoiceItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@map("stock_batches")
+}
+
+model StockAdjustment {
+  id       String @id @default(cuid())
+  tenantId String
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  // Positive = stock added, negative = stock removed.
+  quantityChange Decimal
+  reason         String // DAMAGE | LOSS | CORRECTION | OPENING_STOCK | OTHER
+  notes          String?
+
+  createdByUserId String
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@map("stock_adjustments")
+}
+
+model Party {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name      String
+  type      String  @default("CUSTOMER") // CUSTOMER | SUPPLIER | BOTH
+  phone     String?
+  email     String?
+  address   String?
+  state     String?
+  gstNumber String?
+
+  openingBalance Decimal @default(0)
+
+  isActive Boolean @default(true)
+
+  // Production module — outside processor goods can be sent to on a job
+  // work challan (GST delivery challan, not an invoice).
+  isJobWorker Boolean @default(false)
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
+  payments        Payment[]
+  jobWorkChallans JobWorkChallan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("parties")
+}
+
+// Sequential, gap-free-per-key counters used to generate GST-compliant
+// invoice numbers (e.g. key "SALES-2025-26" -> next value). Incremented
+// inside a transaction so concurrent cashiers never collide.
+model Counter {
+  id       String @id @default(cuid())
+  tenantId String
+
+  key   String
+  value Int    @default(0)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@map("counters")
+}
+
+model Invoice {
+  id       String @id @default(cuid())
+  tenantId String
+
+  type          String // QUOTATION | SALES | PURCHASE | SALES_RETURN | PURCHASE_RETURN
+  invoiceNumber String
+  invoiceDate   DateTime  @default(now())
+  dueDate       DateTime?
+
+  partyId String
+  party   Party  @relation(fields: [partyId], references: [id])
+
+  subtotal       Decimal @default(0)
+  discountAmount Decimal @default(0)
+  taxableAmount  Decimal @default(0)
+  cgstAmount     Decimal @default(0)
+  sgstAmount     Decimal @default(0)
+  igstAmount     Decimal @default(0)
+  roundOff       Decimal @default(0)
+  totalAmount    Decimal @default(0)
+
+  amountPaid    Decimal @default(0)
+  paymentStatus String  @default("UNPAID") // UNPAID | PARTIAL | PAID
+
+  // Tyre module — only meaningful/shown when the tenant's businessType is TYRE.
+  vehicleNumber String?
+  vehicleType   String?
+  exchangeValue Decimal @default(0) // old tyre buy-back, deducted from total
+
+  notes String?
+
+  convertedFromId String?
+  convertedFrom   Invoice?  @relation("QuotationConversion", fields: [convertedFromId], references: [id])
+  convertedTo     Invoice[] @relation("QuotationConversion")
+
+  createdByUserId String
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items    InvoiceItem[]
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, type, invoiceNumber])
+  @@index([tenantId])
+  @@index([tenantId, partyId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id        String @id @default(cuid())
+  tenantId  String
+  invoiceId String
+
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  description String
+  hsnCode     String?
+
+  // Agro module — set when this line was sold out of a specific expiry batch.
+  batchId String?
+  batch   StockBatch? @relation(fields: [batchId], references: [id])
+
+  // Tyre module — only meaningful/shown when the tenant's businessType is TYRE.
+  tyreSerialNumber String?
+  warrantyMonths   Int?
+
+  quantity Decimal
+  unit     String  @default("PCS") // PCS | KG | LITRE | BAG | BOX | METER | DOZEN | OTHER
+  rate     Decimal
+
+  discountPercent Decimal @default(0)
+  discountAmount  Decimal @default(0)
+
+  gstRate    Decimal @default(0)
+  cgstAmount Decimal @default(0)
+  sgstAmount Decimal @default(0)
+  igstAmount Decimal @default(0)
+
+  taxableAmount Decimal
+  totalAmount   Decimal
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@index([tenantId, tyreSerialNumber])
+  @@map("invoice_items")
+}
+
+model Payment {
+  id       String @id @default(cuid())
+  tenantId String
+
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+
+  partyId String
+  party   Party  @relation(fields: [partyId], references: [id])
+
+  amount      Decimal
+  mode        String   @default("CASH") // CASH | UPI | CARD | BANK_TRANSFER | CHEQUE | CREDIT
+  paymentDate DateTime @default(now())
+  reference   String?
+  notes       String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, invoiceId])
+  @@map("payments")
+}
+
+// ─── Production module ─────────────────────────────────────────────────
+
+model Bom {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name            String
+  outputProductId String
+  outputProduct   Product @relation(fields: [outputProductId], references: [id])
+  outputQty       Decimal
+
+  // Only one active BOM per outputProductId is allowed — enforced in the
+  // API layer (no portable partial-unique-index across Postgres/SQLite).
+  isActive Boolean @default(true)
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines  BomLine[]
+  runs   ProductionRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, outputProductId])
+  @@map("boms")
+}
+
+model BomLine {
+  id       String @id @default(cuid())
+  tenantId String
+  bomId    String
+  bom      Bom    @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  inputProductId String
+  inputProduct   Product @relation(fields: [inputProductId], references: [id])
+
+  qty            Decimal
+  wastagePercent Decimal @default(0)
+
+  @@index([tenantId])
+  @@index([bomId])
+  @@map("bom_lines")
+}
+
+model ProductionRun {
+  id       String @id @default(cuid())
+  tenantId String
+
+  runNumber String
+
+  bomId String?
+  bom   Bom?    @relation(fields: [bomId], references: [id])
+
+  status String @default("DRAFT") // DRAFT | IN_PROGRESS | COMPLETED | CANCELLED
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  notes       String?
+
+  // Total FINISHED output qty / total input qty, same base unit only —
+  // null (shown as "—") when units don't match across inputs/outputs.
+  yieldPercent Decimal?
+
+  // Set on completion when total WASTAGE output exceeds
+  // Tenant.maxWastagePercent of total input qty.
+  wastageExceeded Boolean @default(false)
+
+  createdByUserId String
+
+  tenant  Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inputs  ProductionInput[]
+  outputs ProductionOutput[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, runNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("production_runs")
+}
+
+model ProductionInput {
+  id       String        @id @default(cuid())
+  tenantId String
+  runId    String
+  run      ProductionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  qty Decimal
+
+  // Snapshot of the product's stock valuation at the moment it was issued
+  // into this run — doesn't drift if purchasePrice changes afterward.
+  unitCost Decimal @default(0)
+
+  @@index([tenantId])
+  @@index([runId])
+  @@map("production_inputs")
+}
+
+model ProductionOutput {
+  id       String        @id @default(cuid())
+  tenantId String
+  runId    String
+  run      ProductionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  qty        Decimal
+  outputType String  @default("FINISHED") // FINISHED | BYPRODUCT | WASTAGE
+
+  @@index([tenantId])
+  @@index([runId])
+  @@map("production_outputs")
+}
+
+model JobWorkChallan {
+  id       String @id @default(cuid())
+  tenantId String
+
+  challanNumber String
+  partyId       String
+  party         Party  @relation(fields: [partyId], references: [id])
+
+  direction String // OUTWARD | INWARD
+
+  date               DateTime  @default(now())
+  expectedReturnDate DateTime?
+
+  status String @default("OPEN") // OPEN | PARTIALLY_RETURNED | CLOSED
+
+  // Set on INWARD challans, pointing back to the OUTWARD challan they're
+  // returning goods against.
+  linkedChallanId String?
+  linkedChallan   JobWorkChallan?  @relation("ChallanReturn", fields: [linkedChallanId], references: [id])
+  returns         JobWorkChallan[] @relation("ChallanReturn")
+
+  notes String?
+
+  createdByUserId String
+
+  tenant Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines  JobWorkChallanLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, challanNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, partyId])
+  @@map("job_work_challans")
+}
+
+model JobWorkChallanLine {
+  id        String         @id @default(cuid())
+  tenantId  String
+  challanId String
+  challan   JobWorkChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  qty         Decimal
+  description String?
+
+  @@index([tenantId])
+  @@index([challanId])
+  @@map("job_work_challan_lines")
+}
+
+// General stock-movement audit trail — every stockQty/wipQty/qtyWithJobWorker
+// change writes one row here via the shared stock-movement service
+// (src/lib/stock/*).
+model StockLedger {
+  id       String @id @default(cuid())
+  tenantId String
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  qty     Decimal // signed: + added, - removed
+  bucket  String  @default("ON_HAND") // ON_HAND | WIP | WITH_JOB_WORKER — which balance moved
+  reason  String // PURCHASE | SALE | PRODUCTION_ISSUE | PRODUCTION_OUTPUT | WASTAGE | JOB_WORK_OUT | JOB_WORK_IN | ADJUSTMENT
+  refType String // "Invoice" | "ProductionRun" | "JobWorkChallan" | "StockAdjustment"
+  refId   String
+
+  date DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@index([tenantId, refType, refId])
+  @@map("stock_ledger")
+}

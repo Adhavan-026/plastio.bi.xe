@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTenantDb } from "@/lib/tenant-db";
 import { computeBalancesByParty } from "@/lib/billing/party-balance";
 import { requireActiveSubscription } from "@/lib/billing/subscription";
+import { ciContains } from "@/lib/db-search";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
 import { SearchBar } from "@/components/list/search-bar";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -32,8 +33,8 @@ export default async function PartiesPage({
   const where = q
     ? {
         OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { phone: { contains: q, mode: "insensitive" as const } },
+          { name: ciContains(q) },
+          { phone: ciContains(q) },
         ],
       }
     : {};
