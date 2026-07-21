@@ -2,13 +2,16 @@
   "name": "plastio.bi.xe",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "seed:production-demo": "tsx prisma/seed-production-demo.ts"
+    "seed:production-demo": "tsx prisma/seed-production-demo.ts",
+    "build:desktop": "cross-env DEPLOYMENT_MODE=desktop next build && node scripts/prepare-desktop-build.js",
+    "dev:desktop": "npm run build:desktop && cross-env DEPLOYMENT_MODE=desktop electron ."
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -45,6 +48,9 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
