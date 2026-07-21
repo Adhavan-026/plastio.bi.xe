@@ -1,0 +1,64 @@
+# Packaging config for the offline desktop build (npm run package:desktop).
+# Never touched by the cloud build/deploy — Vercel doesn't invoke electron-builder.
+
+appId: com.clickone.app
+productName: clickOne
+copyright: Copyright (C) clickOne
+
+directories:
+  output: dist-desktop
+  buildResources: assets
+
+# Deliberately narrow: the Electron shell itself (electron/*.js) only needs
+# better-sqlite3 directly. Everything the Next.js *server* needs is already
+# self-contained in .next/standalone (via extraResources below) — Next's own
+# output file tracing already bundled a minimal node_modules for it there.
+# electron-builder's default dependency walker still resolves this repo's
+# full "dependencies" list (the whole cloud app's stack) into node_modules
+# here too, which is more than the shell truly needs — a known, accepted
+# size tradeoff rather than hand-maintaining a fragile exclude list; see
+# docs/DESKTOP_BUILD.md for the follow-up if installer size becomes a
+# problem later.
+files:
+  - electron/**/*
+  - package.json
+
+# electron-builder hardcodes a "skip any folder literally named
+# node_modules" rule for any from/to copy (app-builder-lib's createFilter,
+# no config override exists) — scripts/rename-for-packaging.js renames
+# .next/standalone/node_modules to _node_modules before this runs, and
+# afterPack below renames it back inside the packaged output. Confirmed
+# by reproducing the exclusion in isolation before writing this workaround.
+extraResources:
+  - from: .next/standalone
+    to: nextjs-server
+    filter:
+      - "**/*"
+  - from: prisma/migrations-desktop
+    to: migrations-desktop
+
+afterPack: scripts/after-pack.js
+
+# Native .node binaries can't be read from inside an asar archive.
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+  - node_modules/bindings/**/*
+  - node_modules/file-uri-to-path/**/*
+
+win:
+  icon: assets/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  language: "1033" # English (United States)
+  artifactName: "clickOne-Setup-${version}.${ext}"
+
+portable:
+  artifactName: "clickOne-Portable-${version}.${ext}"

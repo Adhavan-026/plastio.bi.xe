@@ -26,9 +26,12 @@ app.setName("clickOne");
 const isPackaged = app.isPackaged;
 
 // Step 6's electron-builder config copies these into resourcesPath under
-// exactly these names — see docs/DESKTOP_BUILD.md.
+// exactly these names — see docs/DESKTOP_BUILD.md. Deliberately not named
+// "app": that collides with Electron's own reserved resources/app
+// convention (where it looks for an unpacked app when there's no
+// app.asar), which silently strips node_modules from it during packaging.
 const serverDir = isPackaged
-  ? path.join(process.resourcesPath, "app")
+  ? path.join(process.resourcesPath, "nextjs-server")
   : path.join(__dirname, "..", ".next", "standalone");
 const serverEntry = path.join(serverDir, "server.js");
 const migrationsDir = isPackaged

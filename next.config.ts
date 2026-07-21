@@ -9,7 +9,25 @@ import type { NextConfig } from "next";
 const isDesktop = process.env.DEPLOYMENT_MODE === "desktop";
 
 const nextConfig: NextConfig = {
-  ...(isDesktop ? { output: "standalone" } : {}),
+  ...(isDesktop
+    ? {
+        output: "standalone",
+        // Next's output file tracing statically analyzes require()/import
+        // calls to decide what to copy — it can't follow the dynamic
+        // require() that better-sqlite3's `bindings` loader uses to find
+        // its prebuilt binary, so without this it only copies
+        // better-sqlite3's package.json, silently dropping lib/, build/,
+        // and prebuilds/ entirely. Confirmed by inspecting
+        // .next/standalone/node_modules/better-sqlite3 after a real build.
+        outputFileTracingIncludes: {
+          "/*": [
+            "node_modules/better-sqlite3/**/*",
+            "node_modules/bindings/**/*",
+            "node_modules/file-uri-to-path/**/*",
+          ],
+        },
+      }
+    : {}),
 };
 
 export default nextConfig;

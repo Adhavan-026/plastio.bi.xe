@@ -45,3 +45,6 @@ next-env.d.ts
 # desktop build: local SQLite dev database files
 *.db
 *.db-journal
+
+# desktop build: electron-builder packaging output (installers/portable exe)
+/dist-desktop
