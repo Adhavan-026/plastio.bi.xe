@@ -124,7 +124,23 @@ async function startServer() {
 
 function buildMenu() {
   return Menu.buildFromTemplate([
-    { label: "File", submenu: [{ role: "quit", label: "Exit" }] },
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "Print",
+          accelerator: "CmdOrCtrl+P",
+          // Same native print dialog window.print() (used by the in-page
+          // Print/Download PDF buttons) opens — this just gives it a menu
+          // entry and shortcut too. No cloud PDF service involved anywhere:
+          // "Save as PDF" is just another printer in that native dialog,
+          // same as it is in any desktop browser.
+          click: (_item, browserWindow) => browserWindow?.webContents.print(),
+        },
+        { type: "separator" },
+        { role: "quit", label: "Exit" },
+      ],
+    },
     { label: "View", submenu: [{ role: "reload" }, { role: "toggleDevTools" }] },
   ]);
 }
