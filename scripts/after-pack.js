@@ -5,6 +5,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { retryFsOp } = require("./retry-fs");
 
 module.exports = async function afterPack(context) {
   const serverDir = path.join(context.appOutDir, "resources", "nextjs-server");
@@ -16,7 +17,8 @@ module.exports = async function afterPack(context) {
     return;
   }
 
-  fs.rmSync(restored, { recursive: true, force: true });
-  fs.renameSync(renamed, restored);
+  const label = "after-pack";
+  await retryFsOp(() => fs.rmSync(restored, { recursive: true, force: true }), { label });
+  await retryFsOp(() => fs.renameSync(renamed, restored), { label });
   console.log("after-pack: _node_modules -> node_modules (restored inside packaged app)");
 };

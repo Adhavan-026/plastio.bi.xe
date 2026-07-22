@@ -22,18 +22,27 @@
 
 const fs = require("fs");
 const path = require("path");
+const { retryFsOp } = require("./retry-fs");
 
 const standaloneDir = path.join(__dirname, "..", ".next", "standalone");
 const nodeModules = path.join(standaloneDir, "node_modules");
 const renamed = path.join(standaloneDir, "_node_modules");
 
-if (!fs.existsSync(nodeModules)) {
-  console.error(
-    "rename-for-packaging: .next/standalone/node_modules not found — run build:desktop first."
-  );
-  process.exit(1);
+async function main() {
+  if (!fs.existsSync(nodeModules)) {
+    console.error(
+      "rename-for-packaging: .next/standalone/node_modules not found — run build:desktop first."
+    );
+    process.exit(1);
+  }
+
+  const label = "rename-for-packaging";
+  await retryFsOp(() => fs.rmSync(renamed, { recursive: true, force: true }), { label });
+  await retryFsOp(() => fs.renameSync(nodeModules, renamed), { label });
+  console.log("rename-for-packaging: node_modules -> _node_modules (temporary, for packaging only)");
 }
 
-fs.rmSync(renamed, { recursive: true, force: true });
-fs.renameSync(nodeModules, renamed);
-console.log("rename-for-packaging: node_modules -> _node_modules (temporary, for packaging only)");
+main().catch((error) => {
+  console.error("rename-for-packaging: failed —", error);
+  process.exit(1);
+});
