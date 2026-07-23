@@ -58,7 +58,11 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   language: "1033" # English (United States)
-  artifactName: "clickOne-Setup-${version}.${ext}"
+  # Fixed filename, no version — the website's download link
+  # (https://github.com/<owner>/<repo>/releases/latest/download/clickOne-Setup.exe)
+  # always points at whatever the latest GitHub Release's asset with this
+  # exact name is, so a new release never requires updating the website.
+  artifactName: "clickOne-Setup.exe"
 
 portable:
   artifactName: "clickOne-Portable-${version}.${ext}"

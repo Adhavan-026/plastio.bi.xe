@@ -13,9 +13,17 @@ import {
   Sprout,
   Disc3,
   ChevronDown,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+
+// electron-builder.yml pins the installer's filename to exactly this (no
+// version number) so GitHub's "latest release" URL pattern always serves
+// whatever was most recently published — publishing a new release never
+// requires touching this link. See docs/DESKTOP_BUILD.md.
+const DESKTOP_DOWNLOAD_URL =
+  "https://github.com/Adhavan-026/plastio.bi.xe/releases/latest/download/clickOne-Setup.exe";
 
 const AUDIENCES = ["Agro & Fertilizer Shops", "Tyre & Auto Shops", "General Retail"];
 
@@ -326,6 +334,13 @@ export default function Home() {
               </Button>
             </div>
             <p className="text-muted-foreground text-sm">No credit card. Set up your shop in minutes.</p>
+            <a
+              href={DESKTOP_DOWNLOAD_URL}
+              className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1.5 text-sm font-medium underline underline-offset-4 transition-colors"
+            >
+              <Download className="size-4" />
+              Prefer offline? Download the Windows app
+            </a>
           </div>
 
           <div className="relative flex justify-center lg:justify-end">
