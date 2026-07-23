@@ -12,12 +12,16 @@ import {
   ALargeSmall,
   Sprout,
   Disc3,
-  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { FeatureShowcaseRow, type FlagshipFeature } from "@/components/landing/feature-showcase";
 import { SiteFooter } from "@/components/landing/site-footer";
+import { SmoothScrollProvider } from "@/components/landing/smooth-scroll-provider";
+import { Reveal } from "@/components/landing/reveal";
+import { ParallaxHero } from "@/components/landing/parallax-hero";
+import { ParallaxSectionBg } from "@/components/landing/parallax-section-bg";
+import { HeroForeground } from "@/components/landing/hero-foreground";
 
 const AUDIENCES = ["Agro & Fertilizer Shops", "Tyre & Auto Shops", "General Retail"];
 
@@ -176,69 +180,9 @@ const FAQS = [
   },
 ];
 
-function DashboardMockup() {
-  return (
-    <div className="w-full max-w-md overflow-hidden rounded-2xl border bg-white shadow-2xl">
-      <div className="flex items-center gap-1.5 border-b bg-neutral-50 px-3 py-2.5">
-        <span className="size-2.5 rounded-full bg-neutral-300" />
-        <span className="size-2.5 rounded-full bg-neutral-300" />
-        <span className="size-2.5 rounded-full bg-neutral-300" />
-        <span className="text-muted-foreground ml-2 rounded-md bg-white px-2 py-0.5 text-[10px] ring-1 ring-neutral-200">
-          app.clickone.in/dashboard
-        </span>
-      </div>
-      <div className="flex">
-        <div className="flex w-10 flex-col items-center gap-3 border-r bg-neutral-50 py-3">
-          <span className="bg-primary size-5 rounded-md" />
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span key={i} className="size-3 rounded-sm bg-neutral-200" />
-          ))}
-        </div>
-        <div className="flex-1 space-y-3 p-3.5">
-          <div className="flex items-center justify-between">
-            <span className="h-2.5 w-20 rounded bg-neutral-200" />
-            <span className="bg-primary h-5 w-16 rounded-md" />
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              ["bg-primary", "₹1,01,641"],
-              ["bg-chart-4", "13"],
-              ["bg-chart-5", "2"],
-            ].map(([tone, value]) => (
-              <div key={value} className="rounded-lg border p-2">
-                <span className={`block h-1 w-5 rounded-full ${tone}`} />
-                <span className="mt-1.5 block text-xs font-bold">{value}</span>
-              </div>
-            ))}
-          </div>
-          <div className="h-20 rounded-lg border p-2">
-            <svg viewBox="0 0 200 60" className="h-full w-full" preserveAspectRatio="none">
-              <polyline
-                points="0,45 25,40 50,42 75,20 100,28 125,15 150,22 175,8 200,18"
-                fill="none"
-                className="stroke-primary"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="space-y-1.5">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg border px-2 py-1.5">
-                <span className="h-2 w-24 rounded bg-neutral-200" />
-                <span className="h-2 w-10 rounded bg-neutral-200" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
   return (
+    <SmoothScrollProvider>
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-white/80 px-6 py-4 backdrop-blur-sm sm:px-10">
         <Logo className="h-7 w-auto" />
@@ -267,106 +211,84 @@ export default function Home() {
       </header>
 
       <main className="flex flex-col">
-        {/* Hero — the splash banner used to carry all the visual weight here;
-            now that it's gone, this soft two-blob background (extending the
-            single blob that already sat behind the dashboard mockup) fills
-            that role instead, without a full-bleed illustration. */}
-        <section className="relative grid grid-cols-1 items-center gap-12 overflow-hidden px-6 py-20 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:py-28">
-          <div className="bg-accent/40 absolute -top-24 -left-32 -z-10 size-96 rounded-full blur-3xl" />
-          <div className="flex flex-col gap-6">
-            <span className="bg-accent text-accent-foreground w-fit rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
-              GST Billing, Simplified
-            </span>
-            <h1 className="max-w-xl text-4xl leading-tight font-bold tracking-tight text-balance sm:text-5xl lg:text-[3.25rem]">
-              Billing built for how Indian shops actually work.
-            </h1>
-            <p className="text-muted-foreground max-w-md text-lg">
-              GST-ready invoices, live inventory, and reports for agro and tyre retailers — all in
-              one place, purpose-built for Indian retail.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button size="lg" render={<Link href="/login" />} nativeButton={false} className="px-8">
-                Get Started
-                <ArrowRight />
-              </Button>
-              <Button size="lg" variant="outline" render={<a href="#features" />} nativeButton={false}>
-                See features
-              </Button>
-            </div>
-            <p className="text-muted-foreground text-sm">No credit card. Set up your shop in minutes.</p>
-            <Link
-              href="/signup"
-              className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1.5 text-sm font-medium underline underline-offset-4 transition-colors"
-            >
-              <Download className="size-4" />
-              Prefer offline? Get the Windows app
-            </Link>
-          </div>
-
-          <div className="relative flex justify-center lg:justify-end">
-            <div className="bg-primary/20 absolute -top-8 -right-6 -z-10 size-56 rounded-full blur-3xl" />
-            <DashboardMockup />
-          </div>
-        </section>
+        {/* Hero — background lives in ParallaxHero (scroll-linked parallax
+            layer + placeholder gradient art, swaps to a real Whisk/Flow
+            image or video automatically once one exists at
+            /landing/hero-bg.jpg or /landing/hero-loop.mp4). Foreground
+            content is a separate client component (HeroForeground) since
+            its entrance animations need motion/react, which requires a
+            "use client" boundary this server component can't provide
+            directly. */}
+        <ParallaxHero>
+          <HeroForeground />
+        </ParallaxHero>
 
         {/* Audience strip */}
-        <section className="border-y bg-white/60 px-6 py-8 sm:px-10">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-10 gap-y-3">
-            <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-              Built for
-            </span>
-            {AUDIENCES.map((a) => (
-              <span key={a} className="text-sm font-semibold">
-                {a}
+        <Reveal>
+          <section className="border-y bg-white/60 px-6 py-8 sm:px-10">
+            <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-10 gap-y-3">
+              <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                Built for
               </span>
-            ))}
-          </div>
-        </section>
+              {AUDIENCES.map((a) => (
+                <span key={a} className="text-sm font-semibold">
+                  {a}
+                </span>
+              ))}
+            </div>
+          </section>
+        </Reveal>
 
         {/* Flagship features — large alternating rows for the 3 headline
             capabilities, before the compact grid covers the rest. */}
         <section id="features" className="mx-auto w-full max-w-5xl px-6 py-24 sm:px-10">
-          <div className="mx-auto mb-16 max-w-2xl text-center">
+          <Reveal className="mx-auto mb-16 max-w-2xl text-center">
             <span className="text-primary text-xs font-bold tracking-wide uppercase">
               Everything your shop needs
             </span>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
               One system for billing, stock, and reports.
             </h2>
-          </div>
+          </Reveal>
           <div className="flex flex-col gap-20">
             {FLAGSHIP_FEATURES.map((item, i) => (
-              <FeatureShowcaseRow key={item.title} item={item} reversed={i % 2 === 1} />
+              <Reveal key={item.title} delay={0.1}>
+                <FeatureShowcaseRow item={item} reversed={i % 2 === 1} />
+              </Reveal>
             ))}
           </div>
         </section>
 
         {/* Compact feature grid — everything else. */}
-        <section className="mx-auto w-full max-w-6xl px-6 py-24 sm:px-10">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((feature, i) => (
-              <div
-                key={feature.title}
-                className="bg-card flex flex-col gap-3 rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md"
-              >
-                <span
-                  className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${FEATURE_TINTS[i % FEATURE_TINTS.length]}`}
+        <Reveal>
+          <section className="mx-auto w-full max-w-6xl px-6 py-24 sm:px-10">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURES.map((feature, i) => (
+                <div
+                  key={feature.title}
+                  className="bg-card flex flex-col gap-3 rounded-xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
                 >
-                  <feature.icon className="size-4.5" />
-                </span>
-                <div>
-                  <h3 className="text-sm font-bold">{feature.title}</h3>
-                  <p className="text-muted-foreground mt-1 text-sm">{feature.description}</p>
+                  <span
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${FEATURE_TINTS[i % FEATURE_TINTS.length]}`}
+                  >
+                    <feature.icon className="size-4.5" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold">{feature.title}</h3>
+                    <p className="text-muted-foreground mt-1 text-sm">{feature.description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        </Reveal>
 
         {/* Modules — given a bolder, full-bleed tinted section treatment,
             mirroring how industry-specific callouts get more visual weight
             on most SaaS landing pages. */}
-        <section id="modules" className="bg-primary/[0.04] px-6 py-28 sm:px-10">
+        <Reveal>
+        <section id="modules" className="relative bg-primary/[0.04] px-6 py-28 sm:px-10">
+          <ParallaxSectionBg src="/landing/modules-bg.jpg" />
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto mb-16 max-w-2xl text-center">
               <span className="text-primary text-xs font-bold tracking-wide uppercase">
@@ -402,8 +324,10 @@ export default function Home() {
             </p>
           </div>
         </section>
+        </Reveal>
 
         {/* Reports */}
+        <Reveal>
         <section id="reports" className="mx-auto w-full max-w-4xl px-6 py-24 sm:px-10">
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <span className="text-primary text-xs font-bold tracking-wide uppercase">
@@ -425,8 +349,10 @@ export default function Home() {
             Every report exports to CSV in one click.
           </p>
         </section>
+        </Reveal>
 
         {/* How it works */}
+        <Reveal>
         <section className="bg-white/60 px-6 py-24 sm:px-10">
           <div className="mx-auto max-w-5xl">
             <div className="mx-auto mb-14 max-w-2xl text-center">
@@ -450,8 +376,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+        </Reveal>
 
         {/* FAQ */}
+        <Reveal>
         <section id="faq" className="mx-auto w-full max-w-3xl px-6 py-24 sm:px-10">
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <span className="text-primary text-xs font-bold tracking-wide uppercase">Questions</span>
@@ -473,10 +401,13 @@ export default function Home() {
             ))}
           </div>
         </section>
+        </Reveal>
 
         {/* Final CTA */}
+        <Reveal>
         <section className="px-6 py-20 sm:px-10">
-          <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 rounded-3xl bg-linear-to-br from-[#0d1b33] via-[#1e3a76] to-[#4a7cba] px-8 py-16 text-center text-white">
+          <div className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 overflow-hidden rounded-3xl bg-linear-to-br from-[#0d1b33] via-[#1e3a76] to-[#4a7cba] px-8 py-16 text-center text-white">
+            <ParallaxSectionBg src="/landing/cta-bg.jpg" opacityClassName="opacity-30" />
             <h2 className="max-w-lg text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               Ready to bill smarter?
             </h2>
@@ -494,9 +425,11 @@ export default function Home() {
             </Button>
           </div>
         </section>
+        </Reveal>
       </main>
 
       <SiteFooter />
     </div>
+    </SmoothScrollProvider>
   );
 }
