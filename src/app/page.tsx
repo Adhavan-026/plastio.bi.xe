@@ -12,11 +12,12 @@ import {
   ALargeSmall,
   Sprout,
   Disc3,
-  ChevronDown,
   Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+import { FeatureShowcaseRow, type FlagshipFeature } from "@/components/landing/feature-showcase";
+import { SiteFooter } from "@/components/landing/site-footer";
 
 const AUDIENCES = ["Agro & Fertilizer Shops", "Tyre & Auto Shops", "General Retail"];
 
@@ -31,27 +32,57 @@ const FEATURE_TINTS = [
   "bg-[#f7a1a1]/25 text-[#b23a3a]",
 ];
 
-const FEATURES = [
+// The 3 headline features get the large alternating showcase treatment
+// (FeatureShowcaseRow); everything else stays in the compact grid below —
+// same "hero features get big treatment, rest get a grid" split used by
+// most SaaS landing pages.
+const FLAGSHIP_FEATURES: FlagshipFeature[] = [
   {
     icon: ReceiptText,
+    eyebrow: "Billing",
     title: "GST-ready invoicing",
     description:
-      "CGST/SGST/IGST split automatically per line item, financial-year invoice numbers, and print-ready formats.",
+      "Every invoice splits CGST/SGST or IGST automatically per line item, numbers itself by financial year, and prints ready to hand over — no manual GST math, ever.",
+    points: [
+      "Correct tax split for in-state vs. interstate sales",
+      "Financial-year invoice numbering, no gaps or duplicates",
+      "Print-ready format, no separate PDF tool needed",
+    ],
+    tint: "bg-[#1e3a76]/15",
   },
   {
     icon: PackageSearch,
-    title: "Live inventory",
-    description: "Stock levels update with every sale and purchase, with low-stock alerts built in.",
+    eyebrow: "Inventory",
+    title: "Live inventory, always accurate",
+    description:
+      "Stock levels update the moment a sale or purchase happens — no end-of-day reconciliation, no guessing what's actually on the shelf.",
+    points: [
+      "Stock adjusts automatically with every invoice",
+      "Low-stock alerts before you run out",
+      "Batch & expiry tracking for agro, warranty tracking for tyres",
+    ],
+    tint: "bg-[#4a7cba]/15",
   },
+  {
+    icon: ChartNoAxesCombined,
+    eyebrow: "Reports",
+    title: "Know your numbers, instantly",
+    description:
+      "Six built-in reports — sales, GST, item and party-wise, stock valuation, and profit & loss — ready the moment you need them, no spreadsheets involved.",
+    points: [
+      "GSTR-1 style GST summary, rate-wise and HSN-wise",
+      "Party-wise and item-wise breakdowns",
+      "Every report exports to CSV in one click",
+    ],
+    tint: "bg-[#8cb2e3]/20",
+  },
+];
+
+const FEATURES = [
   {
     icon: Wallet,
     title: "Payments & receivables",
     description: "Record partial or full payments and see exactly who owes what, and for how long, at a glance.",
-  },
-  {
-    icon: ChartNoAxesCombined,
-    title: "Reports, built in",
-    description: "Sales, GST summary, item & party-wise, stock valuation, and profit & loss — no spreadsheets.",
   },
   {
     icon: Users,
@@ -209,75 +240,7 @@ function DashboardMockup() {
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      {/* Splash — full-bleed brand banner, the first thing a visitor sees.
-          Background is an original SVG mountain scene (hand-built, not a
-          licensed photo) — soft bezier ridgelines with atmospheric blur on
-          the distant layers, so it scales crisply at any size. */}
-      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-[#0a1729] px-6 text-center">
-        <svg
-          viewBox="0 0 1440 620"
-          preserveAspectRatio="xMidYMax slice"
-          className="absolute inset-0 h-full w-full"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="splash-sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0a1729" />
-              <stop offset="45%" stopColor="#1c3a5c" />
-              <stop offset="100%" stopColor="#5c85a8" />
-            </linearGradient>
-            <filter id="haze-8" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="8" />
-            </filter>
-            <filter id="haze-5" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="5" />
-            </filter>
-            <filter id="haze-3" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" />
-            </filter>
-          </defs>
-          <rect width="1440" height="620" fill="url(#splash-sky)" />
-          <path
-            filter="url(#haze-8)"
-            d="M0,620 L0,171 C34.3,172.8 137.5,183.7 206,182 C274.5,180.3 342.5,165.5 411,161 C479.5,156.5 548.3,154.8 617,155 C685.7,155.2 754.3,164.2 823,162 C891.7,159.8 960.5,150.2 1029,142 C1097.5,133.8 1165.5,116.3 1234,113 C1302.5,109.7 1405.7,120.5 1440,122 L1440,620 Z"
-            fill="#4a6f94"
-            opacity="0.85"
-          />
-          <path
-            filter="url(#haze-5)"
-            d="M0,620 L0,237 C40.0,236.7 160.0,234.5 240,235 C320.0,235.5 400.0,244.8 480,240 C560.0,235.2 640.0,216.7 720,206 C800.0,195.3 880.0,176.0 960,176 C1040.0,176.0 1120.0,193.3 1200,206 C1280.0,218.7 1400.0,244.3 1440,252 L1440,620 Z"
-            fill="#3f6088"
-          />
-          <path
-            filter="url(#haze-3)"
-            d="M0,620 L0,323 C40.0,316.0 160.0,287.8 240,281 C320.0,274.2 400.0,272.5 480,282 C560.0,291.5 640.0,323.8 720,338 C800.0,352.2 880.0,365.3 960,367 C1040.0,368.7 1120.0,351.5 1200,348 C1280.0,344.5 1400.0,346.3 1440,346 L1440,620 Z"
-            fill="#34517a"
-          />
-          <path
-            d="M0,620 L0,388 C48.0,396.5 192.0,425.8 288,439 C384.0,452.2 480.0,465.3 576,467 C672.0,468.7 768.0,453.0 864,449 C960.0,445.0 1056.0,441.5 1152,443 C1248.0,444.5 1392.0,455.5 1440,458 L1440,620 Z"
-            fill="#28405f"
-          />
-          <path
-            d="M0,620 L0,551 C48.0,547.8 192.0,535.3 288,532 C384.0,528.7 480.0,529.8 576,531 C672.0,532.2 768.0,542.0 864,539 C960.0,536.0 1056.0,523.2 1152,513 C1248.0,502.8 1392.0,483.8 1440,478 L1440,620 Z"
-            fill="#1a2c47"
-          />
-        </svg>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(255,255,255,0.10),transparent_55%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/35" />
-        <Logo className="relative h-16 w-auto shrink-0 brightness-0 invert drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)] sm:h-20 md:h-24" />
-        <p className="relative mt-6 text-xs font-semibold tracking-[0.3em] text-white/70 uppercase sm:text-sm">
-          GST Billing, Simplified
-        </p>
-        <a
-          href="#top"
-          className="absolute bottom-8 text-white/60 transition-colors hover:text-white/90"
-          aria-label="Scroll down"
-        >
-          <ChevronDown className="size-7 animate-bounce" />
-        </a>
-      </section>
-
-      <header id="top" className="sticky top-0 z-20 flex items-center justify-between border-b bg-white/80 px-6 py-4 backdrop-blur-sm sm:px-10">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-white/80 px-6 py-4 backdrop-blur-sm sm:px-10">
         <Logo className="h-7 w-auto" />
         <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
           <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -304,8 +267,12 @@ export default function Home() {
       </header>
 
       <main className="flex flex-col">
-        {/* Hero */}
-        <section className="grid grid-cols-1 items-center gap-12 px-6 py-20 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:py-28">
+        {/* Hero — the splash banner used to carry all the visual weight here;
+            now that it's gone, this soft two-blob background (extending the
+            single blob that already sat behind the dashboard mockup) fills
+            that role instead, without a full-bleed illustration. */}
+        <section className="relative grid grid-cols-1 items-center gap-12 overflow-hidden px-6 py-20 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:py-28">
+          <div className="bg-accent/40 absolute -top-24 -left-32 -z-10 size-96 rounded-full blur-3xl" />
           <div className="flex flex-col gap-6">
             <span className="bg-accent text-accent-foreground w-fit rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
               GST Billing, Simplified
@@ -356,9 +323,10 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features */}
-        <section id="features" className="mx-auto w-full max-w-6xl px-6 py-24 sm:px-10">
-          <div className="mx-auto mb-14 max-w-2xl text-center">
+        {/* Flagship features — large alternating rows for the 3 headline
+            capabilities, before the compact grid covers the rest. */}
+        <section id="features" className="mx-auto w-full max-w-5xl px-6 py-24 sm:px-10">
+          <div className="mx-auto mb-16 max-w-2xl text-center">
             <span className="text-primary text-xs font-bold tracking-wide uppercase">
               Everything your shop needs
             </span>
@@ -366,7 +334,16 @@ export default function Home() {
               One system for billing, stock, and reports.
             </h2>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex flex-col gap-20">
+            {FLAGSHIP_FEATURES.map((item, i) => (
+              <FeatureShowcaseRow key={item.title} item={item} reversed={i % 2 === 1} />
+            ))}
+          </div>
+        </section>
+
+        {/* Compact feature grid — everything else. */}
+        <section className="mx-auto w-full max-w-6xl px-6 py-24 sm:px-10">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((feature, i) => (
               <div
                 key={feature.title}
@@ -386,10 +363,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Modules */}
-        <section id="modules" className="bg-white/60 px-6 py-24 sm:px-10">
+        {/* Modules — given a bolder, full-bleed tinted section treatment,
+            mirroring how industry-specific callouts get more visual weight
+            on most SaaS landing pages. */}
+        <section id="modules" className="bg-primary/[0.04] px-6 py-28 sm:px-10">
           <div className="mx-auto max-w-6xl">
-            <div className="mx-auto mb-14 max-w-2xl text-center">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
               <span className="text-primary text-xs font-bold tracking-wide uppercase">
                 Industry modules
               </span>
@@ -397,17 +376,17 @@ export default function Home() {
                 Two specialized toolkits, one core system.
               </h2>
             </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               {MODULES.map((mod) => (
-                <div key={mod.title} className="bg-card flex flex-col gap-4 rounded-2xl border p-7 shadow-sm">
-                  <span className="bg-primary text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-xl">
-                    <mod.icon className="size-5" />
+                <div key={mod.title} className="bg-card flex flex-col gap-5 rounded-2xl border p-8 shadow-md">
+                  <span className="bg-primary text-primary-foreground flex size-14 shrink-0 items-center justify-center rounded-2xl">
+                    <mod.icon className="size-6" />
                   </span>
                   <div>
-                    <h3 className="text-lg font-bold">{mod.title}</h3>
-                    <p className="text-muted-foreground mt-1 text-sm">{mod.description}</p>
+                    <h3 className="text-xl font-bold">{mod.title}</h3>
+                    <p className="text-muted-foreground mt-1.5 text-base">{mod.description}</p>
                   </div>
-                  <ul className="flex flex-col gap-2.5">
+                  <ul className="flex flex-col gap-3">
                     {mod.points.map((point) => (
                       <li key={point} className="flex items-start gap-2.5 text-sm">
                         <CheckCircle2 className="text-primary mt-0.5 size-4 shrink-0" />
@@ -418,7 +397,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="text-muted-foreground mt-6 text-center text-sm">
+            <p className="text-muted-foreground mt-8 text-center text-sm">
               Running a general store? Skip both and use the core billing system as-is.
             </p>
           </div>
@@ -480,9 +459,9 @@ export default function Home() {
               Frequently asked questions
             </h2>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="bg-card divide-y rounded-xl border shadow-sm">
             {FAQS.map((faq) => (
-              <details key={faq.q} className="group bg-card rounded-xl border p-5 open:shadow-sm">
+              <details key={faq.q} className="group p-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
                   {faq.q}
                   <span className="text-muted-foreground ml-4 shrink-0 transition-transform group-open:rotate-45">
@@ -517,14 +496,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t px-6 py-10 sm:px-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <Logo className="h-5 w-auto" />
-          <p className="text-muted-foreground text-xs">
-            &copy; {new Date().getFullYear()} Click One. Built for Indian retail.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
