@@ -70,10 +70,10 @@ run to completion.
 
 Look in the new `dist-desktop` folder inside the project. You'll find:
 
-- **`clickOne Setup <version>.exe`** — the normal installer. Double-click
-  it, click through like installing any Windows program. This is the one
-  to give to an actual shop/customer.
-- **`clickOne <version>.exe`** (portable) — a version that runs without
+- **`clickOne-Setup.exe`** — the normal installer. Double-click it, click
+  through like installing any Windows program. This is the one to give to
+  an actual shop/customer.
+- **`clickOne-Portable-<version>.exe`** — a version that runs without
   installing anything, useful for quick testing.
 
 ## 6. Test it
@@ -82,6 +82,28 @@ See the checklist below. Test on the computer you built it on first, then
 ideally on a second, clean Windows computer that has never had Node.js or
 this project on it — that's the real test of whether it works for an
 actual customer.
+
+## 7. Publish it so the website's download link works
+
+The website's "Download the Windows app" link
+(`src/app/page.tsx`) always points at
+`https://github.com/Adhavan-026/plastio.bi.xe/releases/latest/download/clickOne-Setup.exe`
+— GitHub's stable "latest release" URL. To make that link actually work,
+upload the file to a GitHub Release (only needs the website, no terminal):
+
+1. Go to `https://github.com/Adhavan-026/plastio.bi.xe/releases/new`
+   (log into GitHub first if needed).
+2. Under "Choose a tag," type a version like `v0.1.0` and pick "Create new
+   tag."
+3. Give it a title (e.g. "clickOne 0.1.0").
+4. Drag `dist-desktop\clickOne-Setup.exe` from File Explorer into the box
+   that says "Attach binaries by dropping them here."
+5. Click **"Publish release."**
+
+That's it — the website's download link starts working immediately. Next
+time you build a new version, repeat this with a new tag (e.g. `v0.2.0`)
+and it automatically becomes the new "latest" one the website serves —
+no website changes needed.
 
 ## If something goes wrong
 
