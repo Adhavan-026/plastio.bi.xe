@@ -89,6 +89,8 @@ export default async function AdminClientDetailPage({
             </Badge>
           )}
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">Requested plan</dt>
+            <dd>{tenant.requestedPlan ? PLAN_LABELS[tenant.requestedPlan as SubscriptionPlan] : "—"}</dd>
             <dt className="text-muted-foreground">Current plan</dt>
             <dd>{tenant.subscriptionPlan ? PLAN_LABELS[tenant.subscriptionPlan as SubscriptionPlan] : "—"}</dd>
             <dt className="text-muted-foreground">Keys redeemed</dt>

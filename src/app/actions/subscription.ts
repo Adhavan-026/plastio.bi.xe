@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-db";
-import { PLAN_DURATION_DAYS } from "@/lib/billing/subscription";
+import { redeemKeysForTenant } from "@/lib/billing/subscription";
+import { isDesktopMode } from "@/lib/deployment-mode";
+import { CLOUD_API_URL } from "@/lib/cloud-api";
 import type { SubscriptionPlan } from "@/lib/enums";
 
 export type RedeemSubscriptionState = { error?: string; message?: string } | undefined;
@@ -20,35 +22,75 @@ export async function redeemSubscription(
     return { error: "Enter both the License Key and Activation Code." };
   }
 
+  if (isDesktopMode) {
+    return redeemDesktopLicense(tenantId, licenseKey, activationCode);
+  }
+
   const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
 
-  if (!tenant.licenseKey || !tenant.activationCode || !tenant.subscriptionPlan) {
-    return { error: "No subscription has been issued for your shop yet. Contact us to get keys." };
+  const result = await redeemKeysForTenant(
+    { ...tenant, subscriptionPlan: tenant.subscriptionPlan as SubscriptionPlan | null },
+    licenseKey,
+    activationCode
+  );
+  if (!result.ok) {
+    return { error: result.error };
   }
 
-  if (licenseKey !== tenant.licenseKey || activationCode !== tenant.activationCode) {
-    return { error: "Those keys don't match. Double-check them or contact us for the correct keys." };
+  revalidatePath("/dashboard/activate");
+  revalidatePath("/dashboard");
+
+  return {
+    message: `Activated! Your subscription is valid until ${result.expiresAt.toLocaleDateString("en-IN")}.`,
+  };
+}
+
+// Desktop's local tenant never has a licenseKey/activationCode pre-issued
+// to check against — there's no admin panel for the offline SQLite DB.
+// Instead this makes the one explicit, user-triggered call out to the
+// cloud server (POST /api/license/activate) to validate the key, then
+// stores what comes back locally. Every ongoing check after this is a
+// local DB read (see requireActiveSubscription) — no internet needed
+// again until the subscription needs renewing.
+async function redeemDesktopLicense(
+  tenantId: string,
+  licenseKey: string,
+  activationCode: string
+): Promise<RedeemSubscriptionState> {
+  let response: Response;
+  try {
+    response = await fetch(`${CLOUD_API_URL}/api/license/activate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ licenseKey, activationCode }),
+    });
+  } catch {
+    return {
+      error: "Couldn't reach the activation server. Check your internet connection and try again.",
+    };
   }
 
-  const durationDays = PLAN_DURATION_DAYS[tenant.subscriptionPlan as SubscriptionPlan];
-  const expiresAt = new Date(Date.now() + durationDays * 86_400_000);
-  const redeemedAt = new Date();
+  const data = (await response.json().catch(() => null)) as
+    | { ok: true; subscriptionPlan: string; subscriptionExpiresAt: string }
+    | { ok: false; error: string }
+    | null;
 
-  await prisma.$transaction([
-    prisma.tenant.update({
-      where: { id: tenantId },
-      data: { subscriptionExpiresAt: expiresAt, keysRedeemedAt: redeemedAt },
-    }),
-    prisma.subscriptionIssue.updateMany({
-      where: {
-        tenantId,
-        licenseKey: tenant.licenseKey,
-        activationCode: tenant.activationCode,
-        redeemedAt: null,
-      },
-      data: { redeemedAt },
-    }),
-  ]);
+  if (!data || !data.ok) {
+    return { error: data?.error ?? "Activation failed. Please try again." };
+  }
+
+  const expiresAt = new Date(data.subscriptionExpiresAt);
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: {
+      licenseKey,
+      activationCode,
+      subscriptionPlan: data.subscriptionPlan as SubscriptionPlan,
+      subscriptionExpiresAt: expiresAt,
+      keysRedeemedAt: new Date(),
+    },
+  });
 
   revalidatePath("/dashboard/activate");
   revalidatePath("/dashboard");

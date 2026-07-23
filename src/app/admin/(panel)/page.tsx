@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PAGE_SIZE, resolvePage, totalPages as computeTotalPages } from "@/lib/pagination";
-import { isSubscriptionActive } from "@/lib/billing/subscription";
+import { isSubscriptionActive, PLAN_LABELS } from "@/lib/billing/subscription";
+import type { SubscriptionPlan } from "@/lib/enums";
 import { SearchBar } from "@/components/list/search-bar";
 import { ciContains } from "@/lib/db-search";
 import { ListPagination } from "@/components/list/list-pagination";
@@ -64,6 +65,7 @@ export default async function AdminClientsPage({
         state: true,
         createdAt: true,
         subscriptionExpiresAt: true,
+        requestedPlan: true,
         users: {
           where: { role: "OWNER" },
           take: 1,
@@ -93,6 +95,7 @@ export default async function AdminClientsPage({
               <TableHead>Type</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Signed up</TableHead>
+              <TableHead>Requested plan</TableHead>
               <TableHead>Subscription</TableHead>
               <TableHead />
             </TableRow>
@@ -100,7 +103,7 @@ export default async function AdminClientsPage({
           <TableBody>
             {tenants.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground text-center">
+                <TableCell colSpan={7} className="text-muted-foreground text-center">
                   {q ? `No shops match "${q}".` : "No shops have signed up yet."}
                 </TableCell>
               </TableRow>
@@ -122,6 +125,13 @@ export default async function AdminClientsPage({
                   )}
                 </TableCell>
                 <TableCell>{tenant.createdAt.toLocaleDateString("en-IN")}</TableCell>
+                <TableCell>
+                  {tenant.requestedPlan ? (
+                    <Badge variant="outline">{PLAN_LABELS[tenant.requestedPlan as SubscriptionPlan]}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
                 <TableCell>{statusBadge(tenant)}</TableCell>
                 <TableCell>
                   <Link

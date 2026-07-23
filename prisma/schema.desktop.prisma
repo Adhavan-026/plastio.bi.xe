@@ -62,15 +62,22 @@ model Tenant {
   // of total input gets flagged (ProductionRun.wastageExceeded).
   maxWastagePercent Decimal @default(5)
 
-  // Subscription / licensing (managed by the Super Admin). Not meaningful in
-  // desktop mode (no Super Admin server to talk to) but left in place so the
-  // same client shape works — desktop's tenant simply never gets keys
-  // issued and the app never gates on this offline.
+  // Subscription / licensing. Populated once, on activation: the desktop
+  // app sends the license key + activation code the user pastes in to the
+  // cloud server's public activation API (the one explicit, user-triggered
+  // network call this app ever makes), and stores what comes back here.
+  // subscriptionExpiresAt is then checked purely locally from then on — see
+  // requireActiveSubscription() in src/lib/billing/subscription.ts.
   licenseKey            String?   @unique
   activationCode        String?   @unique
   subscriptionPlan      String? // DAILY | MONTHLY | YEARLY
   subscriptionExpiresAt DateTime?
   keysRedeemedAt        DateTime?
+
+  // Not used offline — the "pick a plan" step happens on the website
+  // before the app is even installed. Kept only so this schema mirrors
+  // schema.prisma's shape field-for-field.
+  requestedPlan String? // DAILY | MONTHLY | YEARLY
 
   users              User[]
   products           Product[]

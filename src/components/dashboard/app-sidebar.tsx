@@ -16,6 +16,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Factory,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/logo";
@@ -28,7 +29,11 @@ export type NavItem = {
 };
 export type BusinessType = "AGRO" | "TYRE" | "COMMON";
 
-export function buildNavItems(businessType: BusinessType, lowStockCount: number): NavItem[] {
+export function buildNavItems(
+  businessType: BusinessType,
+  lowStockCount: number,
+  showDesktopAppLink: boolean
+): NavItem[] {
   return [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/invoices", label: "Invoices", icon: Receipt },
@@ -47,6 +52,11 @@ export function buildNavItems(businessType: BusinessType, lowStockCount: number)
       ? [{ href: "/dashboard/warranty-lookup", label: "Warranty", icon: ShieldCheck }]
       : []),
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    // Only meaningful in the cloud app — showing "get the offline app"
+    // inside the offline app itself would make no sense.
+    ...(showDesktopAppLink
+      ? [{ href: "/dashboard/desktop-app", label: "Desktop App", icon: Download }]
+      : []),
   ];
 }
 
@@ -56,10 +66,12 @@ export function AppSidebar({
   tenantName,
   businessType,
   lowStockCount,
+  showDesktopAppLink,
 }: {
   tenantName: string;
   businessType: BusinessType;
   lowStockCount: number;
+  showDesktopAppLink: boolean;
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -80,7 +92,7 @@ export function AppSidebar({
     });
   }
 
-  const items = buildNavItems(businessType, lowStockCount);
+  const items = buildNavItems(businessType, lowStockCount, showDesktopAppLink);
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 

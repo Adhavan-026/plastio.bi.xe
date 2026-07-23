@@ -32,6 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         tenantName={tenant.name}
         businessType={tenant.businessType as BusinessType}
         lowStockCount={lowStockCount}
+        showDesktopAppLink={!isDesktopMode}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopBar
@@ -40,6 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           userName={userName}
           dueCount={dueCount}
           lowStockCount={lowStockCount}
+          showDesktopAppLink={!isDesktopMode}
         />
         <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col gap-4 p-6 print:max-w-none print:p-0">
           {currentUser && !currentUser.emailVerifiedAt && (

@@ -118,6 +118,13 @@ model Tenant {
   subscriptionExpiresAt DateTime?
   keysRedeemedAt        DateTime?
 
+  // Set when a tenant picks a plan on the "get the desktop app" page,
+  // before any payment or key issuance — lets the Super Admin see what to
+  // quote/charge without a separate notification system (not built yet).
+  // Independent of subscriptionPlan, which only reflects an actually-issued
+  // subscription.
+  requestedPlan SubscriptionPlan?
+
   users              User[]
   products           Product[]
   productCategories  ProductCategory[]

@@ -61,12 +61,14 @@ export function AppTopBar({
   userName,
   dueCount,
   lowStockCount,
+  showDesktopAppLink,
 }: {
   tenantName: string;
   businessType: BusinessType;
   userName: string;
   dueCount: number;
   lowStockCount: number;
+  showDesktopAppLink: boolean;
 }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -107,7 +109,7 @@ export function AppTopBar({
     }
   }
 
-  const items = buildNavItems(businessType, lowStockCount);
+  const items = buildNavItems(businessType, lowStockCount, showDesktopAppLink);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

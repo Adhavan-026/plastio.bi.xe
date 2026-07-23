@@ -125,6 +125,27 @@ no website changes needed.
 Run through this on a real install, not just the portable version:
 
 - [ ] App opens to a working dashboard with no login screen
+- [ ] On a fresh install, opening Invoices/Products/Parties/etc. redirects
+      to an "Activate" page instead of showing the feature (expected — see
+      Activation below). Dashboard and Settings stay reachable either way.
+
+**Activation** (needs internet just for this part):
+- [ ] On the website, sign up for a shop, go to Settings → "Desktop App"
+      (or the landing page's "Get the Windows app" link), pick a plan
+- [ ] In the Super Admin panel, find that shop and issue a subscription —
+      note the License Key + Activation Code shown
+- [ ] In the desktop app's Activate page, paste in that key + code →
+      confirms success and shows an expiry date
+- [ ] Invoices/Products/etc. are now reachable
+- [ ] Turn off Wi-Fi entirely — the app keeps working normally (the
+      internet was only needed for the activation step itself)
+- [ ] Entering a random/wrong key+code shows a clear error and changes
+      nothing
+- [ ] Entering the key+code while offline shows a clear "couldn't reach
+      the activation server, check your internet connection" message
+      instead of crashing
+
+**Everyday use:**
 - [ ] Can add a product
 - [ ] Can add a party (customer/supplier)
 - [ ] Can create a sales invoice
@@ -143,4 +164,4 @@ Run through this on a real install, not just the portable version:
 - [ ] Uninstall and reinstall — a completely fresh shop is created, no
       leftover data from before (unless a backup is restored)
 - [ ] No internet connection is required for any of the above (test with
-      Wi-Fi off)
+      Wi-Fi off) — only the one-time activation step needs it
