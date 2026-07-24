@@ -66,6 +66,6 @@ export const config = {
   // gets redirected to /login and the browser receives that page's HTML
   // instead of the image.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm|mp3)$).*)",
   ],
 };

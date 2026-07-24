@@ -38,6 +38,13 @@ export function ParallaxHero({ children }: { children: React.ReactNode }) {
           // full-bleed background that may not exist yet; next/image errors
           // more intrusively on a missing file than a plain <img> does.
           <img
+            // Checked directly in the ref callback, not just onLoad — a
+            // fast/cached image (e.g. localhost) can finish loading before
+            // React attaches the onLoad listener, so the event never fires
+            // and the image would otherwise stay stuck at opacity-0 forever.
+            ref={(node) => {
+              if (node?.complete && node.naturalWidth > 0) setImageLoaded(true);
+            }}
             src={HERO_IMAGE}
             alt=""
             className={cn(
@@ -50,6 +57,9 @@ export function ParallaxHero({ children }: { children: React.ReactNode }) {
         )}
         {!videoFailed && (
           <video
+            ref={(node) => {
+              if (node && node.readyState >= 3) setVideoLoaded(true);
+            }}
             className={cn(
               "absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-700",
               videoLoaded && "opacity-100"

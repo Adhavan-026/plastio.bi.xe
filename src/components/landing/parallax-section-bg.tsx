@@ -31,6 +31,11 @@ export function ParallaxSectionBg({
             background that may not exist yet; see ParallaxHero for why a
             plain <img> is used here instead of next/image. */}
         <img
+          // Checked directly in the ref callback too — see ParallaxHero for
+          // why onLoad alone isn't reliable for a fast/cached image.
+          ref={(node) => {
+            if (node?.complete && node.naturalWidth > 0) setLoaded(true);
+          }}
           src={src}
           alt=""
           className={cn(
